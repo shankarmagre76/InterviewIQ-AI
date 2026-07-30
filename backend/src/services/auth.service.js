@@ -188,7 +188,7 @@ class AuthService {
     const resetToken = user.getResetPasswordToken();
     await user.save({ validateBeforeSave: false });
 
-    const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+    const clientUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000';
     const resetUrl = `${clientUrl}/reset-password?token=${resetToken}`;
 
     const message = `You are receiving this email because you requested a password reset for your InterviewIQ AI account.\n\nPlease click on the link below or paste it into your browser to reset your password:\n\n${resetUrl}\n\nNote: This reset link will expire in 10 minutes.`;
@@ -196,30 +196,46 @@ class AuthService {
     const htmlMessage = `
       <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
         <h2 style="color: #4F46E5;">InterviewIQ AI - Password Reset Request</h2>
+        <p>Hi ${user.firstName || 'User'},</p>
         <p>You requested a password reset for your InterviewIQ AI account.</p>
         <p>Please click the button below to reset your password. This link is valid for <strong>10 minutes</strong>.</p>
         <div style="margin: 25px 0;">
           <a href="${resetUrl}" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Reset Password</a>
         </div>
         <p style="font-size: 12px; color: #666;">Or copy and paste this link in your browser: <br><a href="${resetUrl}">${resetUrl}</a></p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <p style="font-size: 12px; color: #888;">If you did not request a password reset, please ignore this email.</p>
       </div>
     `;
 
     try {
-      await sendEmail({
+      const emailResult = await sendEmail({
         to: user.email,
         subject: 'InterviewIQ AI - Password Reset Request',
         text: message,
         html: htmlMessage,
+        resetToken,
+        resetUrl,
       });
 
-      return { message: 'Password reset link sent to your email.' };
+      const isDev = process.env.NODE_ENV !== 'production';
+
+      return {
+        message: 'Password reset link sent to your email.',
+        ...(isDev && emailResult?.simulated ? { devResetUrl: resetUrl, devResetToken: resetToken } : {}),
+      };
     } catch (error) {
+      logger.error(`[ForgotPassword Error]: ${error.message}`, error);
+
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
 
-      throw ApiError.internal('Failed to send password reset email. Please try again later.');
+      if (error.code === 'EAUTH' || error.responseCode === 535) {
+        throw ApiError.internal('Email service authentication failed. Please check your EMAIL_USER and EMAIL_PASS (Gmail App Password) in .env.');
+      }
+
+      throw ApiError.internal(error.message || 'Failed to send password reset email. Please try again later.');
     }
   }
 
