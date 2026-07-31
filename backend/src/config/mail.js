@@ -23,6 +23,7 @@ export const isDummyCredential = (user, pass) => {
     'your_email_app_password',
     'your_app_password',
     'your_gmail_app_password',
+    'your_16_digit_gmail_app_password',
     'password',
   ];
 

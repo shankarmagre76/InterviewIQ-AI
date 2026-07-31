@@ -1,12 +1,14 @@
 import User from './auth.model.js';
+import Profile from '../models/profile.model.js';
 import ApiError from '../utils/ApiError.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
+import mongoose from 'mongoose';
 
 class AuthService {
   /**
-   * Register a new user account
+   * Register a new user account and auto-create associated Profile
    * @param {object} userData - { firstName, lastName, email, password, role, phone }
-   * @returns {Promise<{ user: object, accessToken: string, refreshToken: string }>}
+   * @returns {Promise<{ user: object, profile: object, accessToken: string, refreshToken: string }>}
    */
   async register(userData) {
     const { firstName, lastName, email, password, role, phone } = userData;
@@ -17,15 +19,90 @@ class AuthService {
       throw ApiError.badRequest('An account with this email address already exists');
     }
 
-    // Create user document
-    const user = await User.create({
-      firstName,
-      lastName,
-      email,
-      password,
-      role: role || 'Student',
-      phone: phone || '',
-    });
+    let user;
+    let profile;
+    let session = null;
+
+    try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+
+      const [newUser] = await User.create(
+        [
+          {
+            firstName,
+            lastName,
+            email,
+            password,
+            role: role || 'Student',
+            phone: phone || '',
+          },
+        ],
+        { session }
+      );
+      user = newUser;
+
+      const existingProfile = await Profile.findOne({ user: user._id }).session(session);
+      if (existingProfile) {
+        throw ApiError.badRequest('A profile for this user already exists');
+      }
+
+      const [newProfile] = await Profile.create(
+        [
+          {
+            user: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phone: user.phone || '',
+          },
+        ],
+        { session }
+      );
+      profile = newProfile;
+
+      await session.commitTransaction();
+      session.endSession();
+    } catch (transactionError) {
+      if (session) {
+        await session.abortTransaction();
+        session.endSession();
+      }
+
+      if (
+        transactionError.message?.includes('Transaction numbers are only allowed') ||
+        transactionError.message?.includes('replica set')
+      ) {
+        user = await User.create({
+          firstName,
+          lastName,
+          email,
+          password,
+          role: role || 'Student',
+          phone: phone || '',
+        });
+
+        try {
+          const existingProfile = await Profile.findOne({ user: user._id });
+          if (existingProfile) {
+            throw ApiError.badRequest('A profile for this user already exists');
+          }
+
+          profile = await Profile.create({
+            user: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phone: user.phone || '',
+          });
+        } catch (profileError) {
+          if (user && user._id) {
+            await User.findByIdAndDelete(user._id);
+          }
+          throw profileError;
+        }
+      } else {
+        throw transactionError;
+      }
+    }
 
     // Generate JWT access and refresh tokens
     const tokenPayload = { id: user._id, role: user.role, email: user.email };
@@ -38,6 +115,7 @@ class AuthService {
 
     return {
       user: user.toJSON(),
+      profile: profile ? profile.toJSON() : null,
       accessToken,
       refreshToken,
     };

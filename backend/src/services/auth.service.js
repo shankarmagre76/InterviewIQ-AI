@@ -1,9 +1,11 @@
 import User from '../models/User.js';
+import Profile from '../models/profile.model.js';
 import ApiError from '../utils/ApiError.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { sendEmail } from '../config/mail.js';
 import logger from '../utils/logger.js';
 import crypto from 'crypto';
+import mongoose from 'mongoose';
 
 /**
  * Authentication Service
@@ -11,9 +13,9 @@ import crypto from 'crypto';
  */
 class AuthService {
   /**
-   * Register a new user account and send email verification link
+   * Register a new user account, auto-create associated Profile, and send email verification link
    * @param {object} userData - { firstName, lastName, email, password, role, phone }
-   * @returns {Promise<{ user: object, accessToken: string, refreshToken: string }>}
+   * @returns {Promise<{ user: object, profile: object, accessToken: string, refreshToken: string }>}
    */
   async registerUser(userData) {
     const { firstName, lastName, email, password, role, phone } = userData;
@@ -24,15 +26,95 @@ class AuthService {
       throw ApiError.badRequest('An account with this email address already exists');
     }
 
-    // 2. Create user document
-    const user = await User.create({
-      firstName,
-      lastName,
-      email,
-      password,
-      role: role || 'Student',
-      phone: phone || '',
-    });
+    let user;
+    let profile;
+    let session = null;
+
+    try {
+      // Attempt transaction (supported on MongoDB Replica Sets)
+      session = await mongoose.startSession();
+      session.startTransaction();
+
+      // 2. Create user document
+      const [newUser] = await User.create(
+        [
+          {
+            firstName,
+            lastName,
+            email,
+            password,
+            role: role || 'Student',
+            phone: phone || '',
+          },
+        ],
+        { session }
+      );
+      user = newUser;
+
+      // 3. Prevent duplicate profiles & Create Profile linked to User
+      const existingProfile = await Profile.findOne({ user: user._id }).session(session);
+      if (existingProfile) {
+        throw ApiError.badRequest('A profile for this user already exists');
+      }
+
+      const [newProfile] = await Profile.create(
+        [
+          {
+            user: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phone: user.phone || '',
+          },
+        ],
+        { session }
+      );
+      profile = newProfile;
+
+      await session.commitTransaction();
+      session.endSession();
+    } catch (transactionError) {
+      if (session) {
+        await session.abortTransaction();
+        session.endSession();
+      }
+
+      // Fallback strategy for standalone MongoDB instances without transaction support
+      if (
+        transactionError.message?.includes('Transaction numbers are only allowed') ||
+        transactionError.message?.includes('replica set')
+      ) {
+        user = await User.create({
+          firstName,
+          lastName,
+          email,
+          password,
+          role: role || 'Student',
+          phone: phone || '',
+        });
+
+        try {
+          const existingProfile = await Profile.findOne({ user: user._id });
+          if (existingProfile) {
+            throw ApiError.badRequest('A profile for this user already exists');
+          }
+
+          profile = await Profile.create({
+            user: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            phone: user.phone || '',
+          });
+        } catch (profileError) {
+          // Manual Rollback: delete created user if profile creation fails
+          if (user && user._id) {
+            await User.findByIdAndDelete(user._id);
+          }
+          throw profileError;
+        }
+      } else {
+        throw transactionError;
+      }
+    }
 
     // 3. Generate verification token
     const verificationToken = user.getEmailVerificationToken();
@@ -76,6 +158,7 @@ class AuthService {
 
     return {
       user: user.toJSON(),
+      profile: profile ? profile.toJSON() : null,
       accessToken,
       refreshToken,
     };
