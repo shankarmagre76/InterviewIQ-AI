@@ -1,6 +1,7 @@
 import Profile from './profile.model.js';
 import User from '../models/User.js';
 import ApiError from '../utils/ApiError.js';
+import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.util.js';
 
 class ProfileService {
   /**
@@ -80,6 +81,50 @@ class ProfileService {
   }
 
   /**
+   * Upload profile image to Cloudinary, delete previous image, and update Profile & User models
+   * @param {string} userId
+   * @param {Buffer} fileBuffer
+   * @returns {Promise<object>}
+   */
+  async uploadProfileImage(userId, fileBuffer) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to upload profile image');
+    }
+    if (!fileBuffer) {
+      throw ApiError.badRequest('Please provide an image file');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    // Delete existing Cloudinary image asset if present
+    if (profile.profileImage) {
+      await deleteFromCloudinary(profile.profileImage);
+    }
+
+    // Upload new image buffer to Cloudinary
+    const cloudinaryResult = await uploadToCloudinary(fileBuffer, 'interviewiq/profiles');
+    const secureUrl = cloudinaryResult.secure_url;
+
+    // Save secure URL in Profile model
+    profile.profileImage = secureUrl;
+    await profile.save();
+
+    // Synchronize profileImage URL on User model
+    await User.findByIdAndUpdate(userId, { profileImage: secureUrl });
+
+    // Re-populate user details for return payload
+    await profile.populate(
+      'user',
+      'firstName lastName email role phone profileImage isEmailVerified isActive'
+    );
+
+    return profile;
+  }
+
+  /**
    * Delete user profile by user ID
    * @param {string} userId
    * @returns {Promise<boolean>}
@@ -89,9 +134,13 @@ class ProfileService {
       throw ApiError.unauthorized('User ID is required to delete profile');
     }
 
-    const deleted = await Profile.findOneAndDelete({ user: userId });
-    if (!deleted) {
+    const profile = await Profile.findOneAndDelete({ user: userId });
+    if (!profile) {
       throw ApiError.notFound('User profile not found');
+    }
+
+    if (profile.profileImage) {
+      await deleteFromCloudinary(profile.profileImage);
     }
 
     return true;
