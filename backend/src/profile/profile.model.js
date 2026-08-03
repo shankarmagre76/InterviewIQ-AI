@@ -87,6 +87,72 @@ educationSchema.pre('validate', function (next) {
 });
 
 /**
+ * Experience Subdocument Schema
+ */
+const experienceSchema = new mongoose.Schema(
+  {
+    company: {
+      type: String,
+      required: [true, 'Company name is required'],
+      trim: true,
+      maxlength: [100, 'Company name cannot exceed 100 characters'],
+    },
+    position: {
+      type: String,
+      required: [true, 'Job position / title is required'],
+      trim: true,
+      maxlength: [100, 'Position title cannot exceed 100 characters'],
+    },
+    employmentType: {
+      type: String,
+      enum: {
+        values: ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance', 'Self-employed', ''],
+        message: '{VALUE} is not a valid employment type choice',
+      },
+      default: 'Full-time',
+      trim: true,
+    },
+    location: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Location cannot exceed 100 characters'],
+      default: '',
+    },
+    startDate: {
+      type: Date,
+      required: [true, 'Start date is required'],
+    },
+    endDate: {
+      type: Date,
+      default: null,
+    },
+    current: {
+      type: Boolean,
+      default: false,
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Description cannot exceed 1000 characters'],
+      default: '',
+    },
+  },
+  { _id: true }
+);
+
+/**
+ * Pre-validate hook for Experience subdocument to ensure endDate is not before startDate
+ */
+experienceSchema.pre('validate', function (next) {
+  if (this.startDate && this.endDate && !this.current) {
+    if (new Date(this.endDate) < new Date(this.startDate)) {
+      return next(new Error('End date cannot be prior to start date'));
+    }
+  }
+  next();
+});
+
+/**
  * Profile Schema
  * Establishes a one-to-one relationship with the User model to store extended user profile information.
  */
@@ -170,6 +236,10 @@ const profileSchema = new mongoose.Schema(
       type: [educationSchema],
       default: [],
     },
+    experience: {
+      type: [experienceSchema],
+      default: [],
+    },
   },
   {
     timestamps: true,
@@ -196,6 +266,9 @@ profileSchema.index({ 'skills.name': 1 });
 
 // Multikey index for querying candidate profiles by institute name
 profileSchema.index({ 'education.institute': 1 });
+
+// Multikey index for querying candidate profiles by company name
+profileSchema.index({ 'experience.company': 1 });
 
 /* ==========================================================================
    Pre-Validation Hooks
