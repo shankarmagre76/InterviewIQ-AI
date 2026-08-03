@@ -3,14 +3,14 @@ import ApiResponse from '../utils/ApiResponse.js';
 import asyncHandler from '../middleware/async.middleware.js';
 
 /**
- * @desc    Get current user profile
+ * @desc    Get current logged-in user profile
  * @route   GET /api/v1/profile
- * @access  Private
+ * @access  Private (JWT Protected)
  */
 export const getProfile = asyncHandler(async (req, res) => {
-  // Controller stub - business logic to be implemented
-  const profile = await profileService.getProfileByUserId(req.user?.id);
-  return new ApiResponse(200, profile, 'Profile retrieved successfully').send(res);
+  const userId = req.user?._id || req.user?.id;
+  const profile = await profileService.getProfileByUserId(userId);
+  return new ApiResponse(200, profile, 'User profile retrieved successfully').send(res);
 });
 
 /**
@@ -19,8 +19,8 @@ export const getProfile = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const updateProfile = asyncHandler(async (req, res) => {
-  // Controller stub - business logic to be implemented
-  const updatedProfile = await profileService.updateProfileByUserId(req.user?.id, req.body);
+  const userId = req.user?._id || req.user?.id;
+  const updatedProfile = await profileService.updateProfileByUserId(userId, req.body);
   return new ApiResponse(200, updatedProfile, 'Profile updated successfully').send(res);
 });
 
@@ -30,7 +30,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
  * @access  Private
  */
 export const deleteProfile = asyncHandler(async (req, res) => {
-  // Controller stub - business logic to be implemented
-  await profileService.deleteProfileByUserId(req.user?.id);
+  const userId = req.user?._id || req.user?.id;
+  await profileService.deleteProfileByUserId(userId);
   return new ApiResponse(200, null, 'Profile deleted successfully').send(res);
 });

@@ -3,13 +3,25 @@ import ApiError from '../utils/ApiError.js';
 
 class ProfileService {
   /**
-   * Get user profile by user ID
+   * Fetch profile for logged-in user with populated User fields
    * @param {string} userId
    * @returns {Promise<object>}
    */
   async getProfileByUserId(userId) {
-    // Service method stub - business logic to be implemented
-    return null;
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to fetch profile');
+    }
+
+    const profile = await Profile.findOne({ user: userId }).populate(
+      'user',
+      'firstName lastName email role phone profileImage isEmailVerified isActive'
+    );
+
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    return profile;
   }
 
   /**
