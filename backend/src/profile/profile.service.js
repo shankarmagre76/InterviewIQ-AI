@@ -349,6 +349,117 @@ class ProfileService {
     return true;
   }
 
+  /* ==========================================================================
+     Experience Sub-resource Methods
+     ========================================================================== */
+
+  /**
+   * Add a new experience entry to user profile
+   * @param {string} userId
+   * @param {object} experienceData - { company, position, employmentType, location, startDate, endDate, current, description }
+   * @returns {Promise<Array>} Updated experience array
+   */
+  async addExperience(userId, experienceData) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to add experience');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    profile.experience.push(experienceData);
+    await profile.save();
+    return profile.experience;
+  }
+
+  /**
+   * Fetch all experience records of logged-in user profile
+   * @param {string} userId
+   * @returns {Promise<Array>} List of experience records
+   */
+  async getExperience(userId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to fetch experience records');
+    }
+
+    const profile = await Profile.findOne({ user: userId }).select('experience');
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    return profile.experience;
+  }
+
+  /**
+   * Update an existing experience record in user profile by experience ID
+   * @param {string} userId
+   * @param {string} experienceId
+   * @param {object} updateData
+   * @returns {Promise<object>} Updated experience subdocument
+   */
+  async updateExperience(userId, experienceId, updateData) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to update experience');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const expItem = profile.experience.id(experienceId);
+    if (!expItem) {
+      throw ApiError.notFound('Experience record not found in user profile');
+    }
+
+    const allowedFields = [
+      'company',
+      'position',
+      'employmentType',
+      'location',
+      'startDate',
+      'endDate',
+      'current',
+      'description',
+    ];
+    Object.keys(updateData).forEach((key) => {
+      if (allowedFields.includes(key)) {
+        expItem[key] = updateData[key];
+      }
+    });
+
+    await profile.save();
+    return expItem;
+  }
+
+  /**
+   * Delete an experience record from user profile by experience ID
+   * @param {string} userId
+   * @param {string} experienceId
+   * @returns {Promise<boolean>} True upon deletion
+   */
+  async deleteExperience(userId, experienceId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to delete experience');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const expItem = profile.experience.id(experienceId);
+    if (!expItem) {
+      throw ApiError.notFound('Experience record not found in user profile');
+    }
+
+    profile.experience.pull(experienceId);
+    await profile.save();
+    return true;
+  }
+
   /**
    * Delete user profile by user ID
    * @param {string} userId

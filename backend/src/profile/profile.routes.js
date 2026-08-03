@@ -11,6 +11,10 @@ import {
   getEducationHandler,
   updateEducationHandler,
   deleteEducationHandler,
+  addExperienceHandler,
+  getExperienceHandler,
+  updateExperienceHandler,
+  deleteExperienceHandler,
   deleteProfile,
 } from './profile.controller.js';
 import {
@@ -21,6 +25,9 @@ import {
   addEducationValidation,
   updateEducationValidation,
   educationIdParamValidation,
+  addExperienceValidation,
+  updateExperienceValidation,
+  experienceIdParamValidation,
   validate,
 } from './profile.validation.js';
 import authenticate from '../middleware/auth.middleware.js';
@@ -116,6 +123,38 @@ router.put('/education/:id', updateEducationValidation, validate, updateEducatio
  * @access  Private (JWT Protected)
  */
 router.delete('/education/:id', educationIdParamValidation, validate, deleteEducationHandler);
+
+/* ==========================================================================
+   Experience Sub-resource CRUD Endpoints
+   ========================================================================== */
+
+/**
+ * @desc    Add a new experience record to user profile
+ * @route   POST /api/v1/profile/experience
+ * @access  Private (JWT Protected)
+ */
+router.post('/experience', addExperienceValidation, validate, addExperienceHandler);
+
+/**
+ * @desc    Get all experience records of logged-in user profile
+ * @route   GET /api/v1/profile/experience
+ * @access  Private (JWT Protected)
+ */
+router.get('/experience', getExperienceHandler);
+
+/**
+ * @desc    Update an existing experience record in user profile by experience ID
+ * @route   PUT /api/v1/profile/experience/:id
+ * @access  Private (JWT Protected)
+ */
+router.put('/experience/:id', updateExperienceValidation, validate, updateExperienceHandler);
+
+/**
+ * @desc    Delete an experience record from user profile by experience ID
+ * @route   DELETE /api/v1/profile/experience/:id
+ * @access  Private (JWT Protected)
+ */
+router.delete('/experience/:id', experienceIdParamValidation, validate, deleteExperienceHandler);
 
 /**
  * @desc    Delete logged-in user's profile

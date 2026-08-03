@@ -141,6 +141,56 @@ export const deleteEducationHandler = asyncHandler(async (req, res) => {
   return new ApiResponse(200, null, 'Education record deleted successfully').send(res);
 });
 
+/* ==========================================================================
+   Experience Handlers
+   ========================================================================== */
+
+/**
+ * @desc    Add a new experience record to user profile
+ * @route   POST /api/v1/profile/experience
+ * @access  Private (JWT Protected)
+ */
+export const addExperienceHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const experience = await profileService.addExperience(userId, req.body);
+  return new ApiResponse(201, experience, 'Experience record added successfully').send(res);
+});
+
+/**
+ * @desc    Get all experience records of logged-in user profile
+ * @route   GET /api/v1/profile/experience
+ * @access  Private (JWT Protected)
+ */
+export const getExperienceHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const experience = await profileService.getExperience(userId);
+  return new ApiResponse(200, experience, 'Experience records retrieved successfully').send(res);
+});
+
+/**
+ * @desc    Update an existing experience record in user profile
+ * @route   PUT /api/v1/profile/experience/:id
+ * @access  Private (JWT Protected)
+ */
+export const updateExperienceHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const experienceId = req.params.id;
+  const updatedExperience = await profileService.updateExperience(userId, experienceId, req.body);
+  return new ApiResponse(200, updatedExperience, 'Experience record updated successfully').send(res);
+});
+
+/**
+ * @desc    Delete an experience record from user profile
+ * @route   DELETE /api/v1/profile/experience/:id
+ * @access  Private (JWT Protected)
+ */
+export const deleteExperienceHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const experienceId = req.params.id;
+  await profileService.deleteExperience(userId, experienceId);
+  return new ApiResponse(200, null, 'Experience record deleted successfully').send(res);
+});
+
 /**
  * @desc    Delete user profile
  * @route   DELETE /api/v1/profile

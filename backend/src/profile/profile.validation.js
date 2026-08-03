@@ -301,3 +301,114 @@ export const educationIdParamValidation = [
     .isMongoId()
     .withMessage('Invalid education ID format'),
 ];
+
+/**
+ * Validation rules for adding an experience record to profile
+ */
+export const addExperienceValidation = [
+  body('company')
+    .trim()
+    .notEmpty()
+    .withMessage('Company name is required')
+    .isLength({ max: 100 })
+    .withMessage('Company name cannot exceed 100 characters'),
+  body('position')
+    .trim()
+    .notEmpty()
+    .withMessage('Position title is required')
+    .isLength({ max: 100 })
+    .withMessage('Position title cannot exceed 100 characters'),
+  body('employmentType')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isIn(['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance', 'Self-employed', ''])
+    .withMessage('Invalid employment type choice'),
+  body('location')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Location cannot exceed 100 characters'),
+  body('startDate')
+    .notEmpty()
+    .withMessage('Start date is required')
+    .isISO8601()
+    .withMessage('Please provide a valid ISO8601 start date (YYYY-MM-DD)'),
+  body('endDate')
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601()
+    .withMessage('Please provide a valid ISO8601 end date (YYYY-MM-DD)')
+    .custom((value, { req }) => {
+      if (value && req.body.startDate && new Date(value) < new Date(req.body.startDate)) {
+        throw new Error('End date cannot be prior to start date');
+      }
+      return true;
+    }),
+  body('current')
+    .optional()
+    .isBoolean()
+    .withMessage('Current status must be a boolean value'),
+  body('description')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Description cannot exceed 1000 characters'),
+];
+
+/**
+ * Validation rules for updating an experience record in profile
+ */
+export const updateExperienceValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid experience ID format'),
+  body('company')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Company name cannot be empty')
+    .isLength({ max: 100 })
+    .withMessage('Company name cannot exceed 100 characters'),
+  body('position')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Position title cannot be empty')
+    .isLength({ max: 100 })
+    .withMessage('Position title cannot exceed 100 characters'),
+  body('employmentType')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isIn(['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance', 'Self-employed', ''])
+    .withMessage('Invalid employment type choice'),
+  body('location')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Location cannot exceed 100 characters'),
+  body('startDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Please provide a valid ISO8601 start date (YYYY-MM-DD)'),
+  body('endDate')
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601()
+    .withMessage('Please provide a valid ISO8601 end date (YYYY-MM-DD)'),
+  body('current')
+    .optional()
+    .isBoolean()
+    .withMessage('Current status must be a boolean value'),
+  body('description')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Description cannot exceed 1000 characters'),
+];
+
+/**
+ * Validation rules for experience ID URL parameter
+ */
+export const experienceIdParamValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid experience ID format'),
+];
