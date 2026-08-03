@@ -41,6 +41,10 @@ export const uploadProfileImageHandler = asyncHandler(async (req, res) => {
   return new ApiResponse(200, updatedProfile, 'Profile image uploaded successfully').send(res);
 });
 
+/* ==========================================================================
+   Skills Handlers
+   ========================================================================== */
+
 /**
  * @desc    Add a new skill to user profile
  * @route   POST /api/v1/profile/skills
@@ -85,6 +89,56 @@ export const deleteSkillHandler = asyncHandler(async (req, res) => {
   const skillId = req.params.id;
   await profileService.deleteSkill(userId, skillId);
   return new ApiResponse(200, null, 'Skill deleted successfully').send(res);
+});
+
+/* ==========================================================================
+   Education Handlers
+   ========================================================================== */
+
+/**
+ * @desc    Add a new education record to user profile
+ * @route   POST /api/v1/profile/education
+ * @access  Private (JWT Protected)
+ */
+export const addEducationHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const education = await profileService.addEducation(userId, req.body);
+  return new ApiResponse(201, education, 'Education record added successfully').send(res);
+});
+
+/**
+ * @desc    Get all education records of logged-in user profile
+ * @route   GET /api/v1/profile/education
+ * @access  Private (JWT Protected)
+ */
+export const getEducationHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const education = await profileService.getEducation(userId);
+  return new ApiResponse(200, education, 'Education records retrieved successfully').send(res);
+});
+
+/**
+ * @desc    Update an existing education record in user profile
+ * @route   PUT /api/v1/profile/education/:id
+ * @access  Private (JWT Protected)
+ */
+export const updateEducationHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const educationId = req.params.id;
+  const updatedEducation = await profileService.updateEducation(userId, educationId, req.body);
+  return new ApiResponse(200, updatedEducation, 'Education record updated successfully').send(res);
+});
+
+/**
+ * @desc    Delete an education record from user profile
+ * @route   DELETE /api/v1/profile/education/:id
+ * @access  Private (JWT Protected)
+ */
+export const deleteEducationHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const educationId = req.params.id;
+  await profileService.deleteEducation(userId, educationId);
+  return new ApiResponse(200, null, 'Education record deleted successfully').send(res);
 });
 
 /**

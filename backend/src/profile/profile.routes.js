@@ -7,6 +7,10 @@ import {
   getSkillsHandler,
   updateSkillHandler,
   deleteSkillHandler,
+  addEducationHandler,
+  getEducationHandler,
+  updateEducationHandler,
+  deleteEducationHandler,
   deleteProfile,
 } from './profile.controller.js';
 import {
@@ -14,6 +18,9 @@ import {
   addSkillValidation,
   updateSkillValidation,
   skillIdParamValidation,
+  addEducationValidation,
+  updateEducationValidation,
+  educationIdParamValidation,
   validate,
 } from './profile.validation.js';
 import authenticate from '../middleware/auth.middleware.js';
@@ -77,6 +84,38 @@ router.put('/skills/:id', updateSkillValidation, validate, updateSkillHandler);
  * @access  Private (JWT Protected)
  */
 router.delete('/skills/:id', skillIdParamValidation, validate, deleteSkillHandler);
+
+/* ==========================================================================
+   Education Sub-resource CRUD Endpoints
+   ========================================================================== */
+
+/**
+ * @desc    Add a new education record to user profile
+ * @route   POST /api/v1/profile/education
+ * @access  Private (JWT Protected)
+ */
+router.post('/education', addEducationValidation, validate, addEducationHandler);
+
+/**
+ * @desc    Get all education records of logged-in user profile
+ * @route   GET /api/v1/profile/education
+ * @access  Private (JWT Protected)
+ */
+router.get('/education', getEducationHandler);
+
+/**
+ * @desc    Update an existing education record in user profile by education ID
+ * @route   PUT /api/v1/profile/education/:id
+ * @access  Private (JWT Protected)
+ */
+router.put('/education/:id', updateEducationValidation, validate, updateEducationHandler);
+
+/**
+ * @desc    Delete an education record from user profile by education ID
+ * @route   DELETE /api/v1/profile/education/:id
+ * @access  Private (JWT Protected)
+ */
+router.delete('/education/:id', educationIdParamValidation, validate, deleteEducationHandler);
 
 /**
  * @desc    Delete logged-in user's profile

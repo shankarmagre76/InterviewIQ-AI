@@ -124,6 +124,10 @@ class ProfileService {
     return profile;
   }
 
+  /* ==========================================================================
+     Skills Sub-resource Methods
+     ========================================================================== */
+
   /**
    * Add a new skill to user profile
    * @param {string} userId
@@ -239,6 +243,108 @@ class ProfileService {
     }
 
     profile.skills.pull(skillId);
+    await profile.save();
+    return true;
+  }
+
+  /* ==========================================================================
+     Education Sub-resource Methods
+     ========================================================================== */
+
+  /**
+   * Add a new education entry to user profile
+   * @param {string} userId
+   * @param {object} educationData - { institute, degree, branch, cgpa, startYear, endYear, current }
+   * @returns {Promise<Array>} Updated education array
+   */
+  async addEducation(userId, educationData) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to add education');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    profile.education.push(educationData);
+    await profile.save();
+    return profile.education;
+  }
+
+  /**
+   * Fetch all education records of logged-in user profile
+   * @param {string} userId
+   * @returns {Promise<Array>} List of education records
+   */
+  async getEducation(userId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to fetch education records');
+    }
+
+    const profile = await Profile.findOne({ user: userId }).select('education');
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    return profile.education;
+  }
+
+  /**
+   * Update an existing education record in user profile by education ID
+   * @param {string} userId
+   * @param {string} educationId
+   * @param {object} updateData
+   * @returns {Promise<object>} Updated education subdocument
+   */
+  async updateEducation(userId, educationId, updateData) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to update education');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const eduItem = profile.education.id(educationId);
+    if (!eduItem) {
+      throw ApiError.notFound('Education record not found in user profile');
+    }
+
+    const allowedFields = ['institute', 'degree', 'branch', 'cgpa', 'startYear', 'endYear', 'current'];
+    Object.keys(updateData).forEach((key) => {
+      if (allowedFields.includes(key)) {
+        eduItem[key] = updateData[key];
+      }
+    });
+
+    await profile.save();
+    return eduItem;
+  }
+
+  /**
+   * Delete an education record from user profile by education ID
+   * @param {string} userId
+   * @param {string} educationId
+   * @returns {Promise<boolean>} True upon deletion
+   */
+  async deleteEducation(userId, educationId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to delete education');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const eduItem = profile.education.id(educationId);
+    if (!eduItem) {
+      throw ApiError.notFound('Education record not found in user profile');
+    }
+
+    profile.education.pull(educationId);
     await profile.save();
     return true;
   }

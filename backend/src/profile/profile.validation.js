@@ -202,3 +202,102 @@ export const skillIdParamValidation = [
     .isMongoId()
     .withMessage('Invalid skill ID format'),
 ];
+
+/**
+ * Validation rules for adding an education record to profile
+ */
+export const addEducationValidation = [
+  body('institute')
+    .trim()
+    .notEmpty()
+    .withMessage('Institute name is required')
+    .isLength({ max: 100 })
+    .withMessage('Institute name cannot exceed 100 characters'),
+  body('degree')
+    .trim()
+    .notEmpty()
+    .withMessage('Degree is required')
+    .isLength({ max: 100 })
+    .withMessage('Degree cannot exceed 100 characters'),
+  body('branch')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Branch cannot exceed 100 characters'),
+  body('cgpa')
+    .optional({ nullable: true, checkFalsy: true })
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('CGPA / Grade must be a number between 0 and 100'),
+  body('startYear')
+    .notEmpty()
+    .withMessage('Start year is required')
+    .isInt({ min: 1950, max: 2100 })
+    .withMessage('Start year must be a valid year between 1950 and 2100'),
+  body('endYear')
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1950, max: 2100 })
+    .withMessage('End year must be a valid year between 1950 and 2100')
+    .custom((value, { req }) => {
+      if (value && req.body.startYear && Number(value) < Number(req.body.startYear)) {
+        throw new Error('End year cannot be prior to start year');
+      }
+      return true;
+    }),
+  body('current')
+    .optional()
+    .isBoolean()
+    .withMessage('Current status must be a boolean value'),
+];
+
+/**
+ * Validation rules for updating an education record in profile
+ */
+export const updateEducationValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid education ID format'),
+  body('institute')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Institute name cannot be empty')
+    .isLength({ max: 100 })
+    .withMessage('Institute name cannot exceed 100 characters'),
+  body('degree')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Degree cannot be empty')
+    .isLength({ max: 100 })
+    .withMessage('Degree cannot exceed 100 characters'),
+  body('branch')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Branch cannot exceed 100 characters'),
+  body('cgpa')
+    .optional({ nullable: true, checkFalsy: true })
+    .isFloat({ min: 0, max: 100 })
+    .withMessage('CGPA / Grade must be a number between 0 and 100'),
+  body('startYear')
+    .optional()
+    .isInt({ min: 1950, max: 2100 })
+    .withMessage('Start year must be a valid year between 1950 and 2100'),
+  body('endYear')
+    .optional({ nullable: true, checkFalsy: true })
+    .isInt({ min: 1950, max: 2100 })
+    .withMessage('End year must be a valid year between 1950 and 2100'),
+  body('current')
+    .optional()
+    .isBoolean()
+    .withMessage('Current status must be a boolean value'),
+];
+
+/**
+ * Validation rules for education ID URL parameter
+ */
+export const educationIdParamValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid education ID format'),
+];
