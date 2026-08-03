@@ -1,6 +1,31 @@
 import mongoose from 'mongoose';
 
 /**
+ * Skill Subdocument Schema
+ */
+const skillSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'Skill name is required'],
+      trim: true,
+      maxlength: [50, 'Skill name cannot exceed 50 characters'],
+    },
+    level: {
+      type: String,
+      required: [true, 'Skill level is required'],
+      enum: {
+        values: ['Beginner', 'Intermediate', 'Advanced'],
+        message: '{VALUE} is not a valid skill level. Allowed levels: Beginner, Intermediate, Advanced',
+      },
+      default: 'Beginner',
+      trim: true,
+    },
+  },
+  { _id: true }
+);
+
+/**
  * Profile Schema
  * Establishes a one-to-one relationship with the User model to store extended user profile information.
  */
@@ -76,6 +101,10 @@ const profileSchema = new mongoose.Schema(
       trim: true,
       default: '',
     },
+    skills: {
+      type: [skillSchema],
+      default: [],
+    },
   },
   {
     timestamps: true,
@@ -96,6 +125,32 @@ profileSchema.index({ firstName: 1, lastName: 1 });
 
 // Single field index for filtering profiles by location
 profileSchema.index({ currentLocation: 1 });
+
+// Multikey index for querying candidate profiles by skill name
+profileSchema.index({ 'skills.name': 1 });
+
+/* ==========================================================================
+   Pre-Validation Hooks
+   ========================================================================== */
+
+/**
+ * Pre-validate hook to prevent duplicate skills (case-insensitive) in the skills array
+ */
+profileSchema.pre('validate', function (next) {
+  if (this.skills && Array.isArray(this.skills)) {
+    const seenSkills = new Set();
+    for (const skill of this.skills) {
+      if (skill.name) {
+        const normalizedName = skill.name.trim().toLowerCase();
+        if (seenSkills.has(normalizedName)) {
+          return next(new Error(`Duplicate skill "${skill.name.trim()}" is not allowed.`));
+        }
+        seenSkills.add(normalizedName);
+      }
+    }
+  }
+  next();
+});
 
 /* ==========================================================================
    Virtual Properties
