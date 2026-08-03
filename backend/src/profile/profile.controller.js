@@ -243,6 +243,21 @@ export const updateResumeHandler = asyncHandler(async (req, res) => {
   return new ApiResponse(200, updatedResume, 'Resume details updated successfully').send(res);
 });
 
+/* ==========================================================================
+   Profile Completion Handler
+   ========================================================================== */
+
+/**
+ * @desc    Calculate and return profile completion percentage
+ * @route   GET /api/v1/profile/completion
+ * @access  Private (JWT Protected)
+ */
+export const getProfileCompletionHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const result = await profileService.calculateProfileCompletion(userId);
+  return new ApiResponse(200, result, 'Profile completion percentage calculated successfully').send(res);
+});
+
 /**
  * @desc    Delete user profile
  * @route   DELETE /api/v1/profile

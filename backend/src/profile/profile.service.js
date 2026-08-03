@@ -485,7 +485,7 @@ class ProfileService {
   /**
    * Update social links for user profile
    * @param {string} userId
-   * @param {object} socialLinksData - { github, linkedin, portfolio, leetcode, hackerrank, codechef }
+   * @param {object} socialLinksData
    * @returns {Promise<object>} Updated social links object
    */
   async updateSocialLinks(userId, socialLinksData) {
@@ -539,7 +539,7 @@ class ProfileService {
   /**
    * Update resume details for user profile
    * @param {string} userId
-   * @param {object} resumeData - { url, publicId, uploadedDate }
+   * @param {object} resumeData
    * @returns {Promise<object>} Updated resume object
    */
   async updateResume(userId, resumeData) {
@@ -555,7 +555,6 @@ class ProfileService {
       }
     });
 
-    // Auto-set uploadedDate if url is provided and uploadedDate is missing
     if (resumeData.url && !resumeData.uploadedDate) {
       fieldsToUpdate['resume.uploadedDate'] = new Date();
     }
@@ -571,6 +570,84 @@ class ProfileService {
     }
 
     return profile.resume;
+  }
+
+  /* ==========================================================================
+     Profile Completion Calculation Method
+     ========================================================================== */
+
+  /**
+   * Calculate profile completion percentage based on 7 sections:
+   * Basic Info (20%), Photo (15%), Skills (15%), Education (15%), Experience (15%), Resume (10%), Social Links (10%)
+   * @param {string} userId
+   * @returns {Promise<{ completion: number }>}
+   */
+  async calculateProfileCompletion(userId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to calculate profile completion');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    let completion = 0;
+
+    // 1. Basic Info (20%)
+    const basicInfoFields = [
+      profile.firstName,
+      profile.lastName,
+      profile.phone,
+      profile.headline,
+      profile.bio,
+      profile.currentLocation,
+    ];
+    const filledBasicCount = basicInfoFields.filter((field) => Boolean(field && field.trim())).length;
+    completion += Math.round((filledBasicCount / basicInfoFields.length) * 20);
+
+    // 2. Photo (15%)
+    if (profile.profileImage && profile.profileImage.trim()) {
+      completion += 15;
+    }
+
+    // 3. Skills (15%)
+    if (profile.skills && profile.skills.length > 0) {
+      completion += 15;
+    }
+
+    // 4. Education (15%)
+    if (profile.education && profile.education.length > 0) {
+      completion += 15;
+    }
+
+    // 5. Experience (15%)
+    if (profile.experience && profile.experience.length > 0) {
+      completion += 15;
+    }
+
+    // 6. Resume (10%)
+    if (profile.resume && profile.resume.url && profile.resume.url.trim()) {
+      completion += 10;
+    }
+
+    // 7. Social Links (10%)
+    if (profile.socialLinks) {
+      const socialFields = [
+        profile.socialLinks.github,
+        profile.socialLinks.linkedin,
+        profile.socialLinks.portfolio,
+        profile.socialLinks.leetcode,
+        profile.socialLinks.hackerrank,
+        profile.socialLinks.codechef,
+      ];
+      const filledSocialCount = socialFields.filter((link) => Boolean(link && link.trim())).length;
+      if (filledSocialCount > 0) {
+        completion += Math.min(10, filledSocialCount * 5);
+      }
+    }
+
+    return { completion: Math.min(100, completion) };
   }
 
   /**

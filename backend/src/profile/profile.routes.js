@@ -19,6 +19,7 @@ import {
   updateSocialLinksHandler,
   getResumeHandler,
   updateResumeHandler,
+  getProfileCompletionHandler,
   deleteProfile,
 } from './profile.controller.js';
 import {
@@ -50,6 +51,13 @@ router.use(authenticate);
  * @access  Private (JWT Protected)
  */
 router.get('/', getProfile);
+
+/**
+ * @desc    Calculate & return profile completion percentage
+ * @route   GET /api/v1/profile/completion
+ * @access  Private (JWT Protected)
+ */
+router.get('/completion', getProfileCompletionHandler);
 
 /**
  * @desc    Update logged-in user's profile details
