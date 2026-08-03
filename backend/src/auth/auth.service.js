@@ -1,5 +1,5 @@
 import User from './auth.model.js';
-import Profile from '../models/profile.model.js';
+import Profile from '../profile/profile.model.js';
 import ApiError from '../utils/ApiError.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import mongoose from 'mongoose';
