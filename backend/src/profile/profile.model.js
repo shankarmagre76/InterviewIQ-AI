@@ -26,6 +26,67 @@ const skillSchema = new mongoose.Schema(
 );
 
 /**
+ * Education Subdocument Schema
+ */
+const educationSchema = new mongoose.Schema(
+  {
+    institute: {
+      type: String,
+      required: [true, 'Institute / College name is required'],
+      trim: true,
+      maxlength: [100, 'Institute name cannot exceed 100 characters'],
+    },
+    degree: {
+      type: String,
+      required: [true, 'Degree name is required'],
+      trim: true,
+      maxlength: [100, 'Degree name cannot exceed 100 characters'],
+    },
+    branch: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Branch / Specialization cannot exceed 100 characters'],
+      default: '',
+    },
+    cgpa: {
+      type: Number,
+      min: [0, 'CGPA / Grade score cannot be negative'],
+      max: [100, 'CGPA / Grade score cannot exceed 100'],
+      default: null,
+    },
+    startYear: {
+      type: Number,
+      required: [true, 'Start year is required'],
+      min: [1950, 'Start year must be 1950 or later'],
+      max: [2100, 'Start year is invalid'],
+    },
+    endYear: {
+      type: Number,
+      min: [1950, 'End year must be 1950 or later'],
+      max: [2100, 'End year is invalid'],
+      default: null,
+    },
+    current: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { _id: true }
+);
+
+/**
+ * Pre-validate hook for Education subdocument to ensure endYear is not before startYear
+ */
+educationSchema.pre('validate', function (next) {
+  if (this.startYear && this.endYear && !this.current) {
+    if (this.endYear < this.startYear) {
+      return next(new Error('End year cannot be prior to start year'));
+    }
+  }
+  next();
+});
+
+/**
  * Profile Schema
  * Establishes a one-to-one relationship with the User model to store extended user profile information.
  */
@@ -105,6 +166,10 @@ const profileSchema = new mongoose.Schema(
       type: [skillSchema],
       default: [],
     },
+    education: {
+      type: [educationSchema],
+      default: [],
+    },
   },
   {
     timestamps: true,
@@ -128,6 +193,9 @@ profileSchema.index({ currentLocation: 1 });
 
 // Multikey index for querying candidate profiles by skill name
 profileSchema.index({ 'skills.name': 1 });
+
+// Multikey index for querying candidate profiles by institute name
+profileSchema.index({ 'education.institute': 1 });
 
 /* ==========================================================================
    Pre-Validation Hooks
