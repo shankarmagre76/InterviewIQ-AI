@@ -412,3 +412,57 @@ export const experienceIdParamValidation = [
     .isMongoId()
     .withMessage('Invalid experience ID format'),
 ];
+
+/**
+ * Validation & Sanitization rules for updating social links
+ */
+export const updateSocialLinksValidation = [
+  body('github')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('GitHub link must be a valid URL'),
+  body('linkedin')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('LinkedIn link must be a valid URL'),
+  body('portfolio')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('Portfolio link must be a valid URL'),
+  body('leetcode')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('LeetCode link must be a valid URL'),
+  body('hackerrank')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('HackerRank link must be a valid URL'),
+  body('codechef')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('CodeChef link must be a valid URL'),
+];
+
+/**
+ * Validation & Sanitization rules for updating resume details
+ */
+export const updateResumeValidation = [
+  body('url')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('Resume URL must be a valid URL'),
+  body('publicId')
+    .optional()
+    .trim(),
+  body('uploadedDate')
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601()
+    .withMessage('Uploaded date must be a valid ISO8601 date'),
+];

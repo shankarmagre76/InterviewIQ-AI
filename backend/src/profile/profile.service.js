@@ -254,7 +254,7 @@ class ProfileService {
   /**
    * Add a new education entry to user profile
    * @param {string} userId
-   * @param {object} educationData - { institute, degree, branch, cgpa, startYear, endYear, current }
+   * @param {object} educationData
    * @returns {Promise<Array>} Updated education array
    */
   async addEducation(userId, educationData) {
@@ -356,7 +356,7 @@ class ProfileService {
   /**
    * Add a new experience entry to user profile
    * @param {string} userId
-   * @param {object} experienceData - { company, position, employmentType, location, startDate, endDate, current, description }
+   * @param {object} experienceData
    * @returns {Promise<Array>} Updated experience array
    */
   async addExperience(userId, experienceData) {
@@ -458,6 +458,119 @@ class ProfileService {
     profile.experience.pull(experienceId);
     await profile.save();
     return true;
+  }
+
+  /* ==========================================================================
+     Social Links Methods
+     ========================================================================== */
+
+  /**
+   * Fetch social links for user profile
+   * @param {string} userId
+   * @returns {Promise<object>} Social links object
+   */
+  async getSocialLinks(userId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to fetch social links');
+    }
+
+    const profile = await Profile.findOne({ user: userId }).select('socialLinks');
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    return profile.socialLinks || {};
+  }
+
+  /**
+   * Update social links for user profile
+   * @param {string} userId
+   * @param {object} socialLinksData - { github, linkedin, portfolio, leetcode, hackerrank, codechef }
+   * @returns {Promise<object>} Updated social links object
+   */
+  async updateSocialLinks(userId, socialLinksData) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to update social links');
+    }
+
+    const allowedFields = ['github', 'linkedin', 'portfolio', 'leetcode', 'hackerrank', 'codechef'];
+    const fieldsToUpdate = {};
+    Object.keys(socialLinksData).forEach((key) => {
+      if (allowedFields.includes(key)) {
+        fieldsToUpdate[`socialLinks.${key}`] = socialLinksData[key];
+      }
+    });
+
+    const profile = await Profile.findOneAndUpdate(
+      { user: userId },
+      { $set: fieldsToUpdate },
+      { new: true, runValidators: true }
+    ).select('socialLinks');
+
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    return profile.socialLinks;
+  }
+
+  /* ==========================================================================
+     Resume Details Methods
+     ========================================================================== */
+
+  /**
+   * Fetch resume details for user profile
+   * @param {string} userId
+   * @returns {Promise<object>} Resume object
+   */
+  async getResume(userId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to fetch resume');
+    }
+
+    const profile = await Profile.findOne({ user: userId }).select('resume');
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    return profile.resume || {};
+  }
+
+  /**
+   * Update resume details for user profile
+   * @param {string} userId
+   * @param {object} resumeData - { url, publicId, uploadedDate }
+   * @returns {Promise<object>} Updated resume object
+   */
+  async updateResume(userId, resumeData) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to update resume');
+    }
+
+    const allowedFields = ['url', 'publicId', 'uploadedDate'];
+    const fieldsToUpdate = {};
+    Object.keys(resumeData).forEach((key) => {
+      if (allowedFields.includes(key)) {
+        fieldsToUpdate[`resume.${key}`] = resumeData[key];
+      }
+    });
+
+    // Auto-set uploadedDate if url is provided and uploadedDate is missing
+    if (resumeData.url && !resumeData.uploadedDate) {
+      fieldsToUpdate['resume.uploadedDate'] = new Date();
+    }
+
+    const profile = await Profile.findOneAndUpdate(
+      { user: userId },
+      { $set: fieldsToUpdate },
+      { new: true, runValidators: true }
+    ).select('resume');
+
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    return profile.resume;
   }
 
   /**

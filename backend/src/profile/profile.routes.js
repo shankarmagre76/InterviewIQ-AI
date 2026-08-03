@@ -15,6 +15,10 @@ import {
   getExperienceHandler,
   updateExperienceHandler,
   deleteExperienceHandler,
+  getSocialLinksHandler,
+  updateSocialLinksHandler,
+  getResumeHandler,
+  updateResumeHandler,
   deleteProfile,
 } from './profile.controller.js';
 import {
@@ -28,6 +32,8 @@ import {
   addExperienceValidation,
   updateExperienceValidation,
   experienceIdParamValidation,
+  updateSocialLinksValidation,
+  updateResumeValidation,
   validate,
 } from './profile.validation.js';
 import authenticate from '../middleware/auth.middleware.js';
@@ -155,6 +161,42 @@ router.put('/experience/:id', updateExperienceValidation, validate, updateExperi
  * @access  Private (JWT Protected)
  */
 router.delete('/experience/:id', experienceIdParamValidation, validate, deleteExperienceHandler);
+
+/* ==========================================================================
+   Social Links Sub-resource Endpoints
+   ========================================================================== */
+
+/**
+ * @desc    Get social links of logged-in user profile
+ * @route   GET /api/v1/profile/social-links
+ * @access  Private (JWT Protected)
+ */
+router.get('/social-links', getSocialLinksHandler);
+
+/**
+ * @desc    Update social links of logged-in user profile
+ * @route   PUT /api/v1/profile/social-links
+ * @access  Private (JWT Protected)
+ */
+router.put('/social-links', updateSocialLinksValidation, validate, updateSocialLinksHandler);
+
+/* ==========================================================================
+   Resume Sub-resource Endpoints
+   ========================================================================== */
+
+/**
+ * @desc    Get resume details of logged-in user profile
+ * @route   GET /api/v1/profile/resume
+ * @access  Private (JWT Protected)
+ */
+router.get('/resume', getResumeHandler);
+
+/**
+ * @desc    Update resume details of logged-in user profile
+ * @route   PUT /api/v1/profile/resume
+ * @access  Private (JWT Protected)
+ */
+router.put('/resume', updateResumeValidation, validate, updateResumeHandler);
 
 /**
  * @desc    Delete logged-in user's profile

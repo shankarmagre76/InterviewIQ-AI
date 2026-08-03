@@ -153,6 +153,68 @@ experienceSchema.pre('validate', function (next) {
 });
 
 /**
+ * Social Links Embedded Schema
+ */
+const socialLinksSchema = new mongoose.Schema(
+  {
+    github: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    linkedin: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    portfolio: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    leetcode: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    hackerrank: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    codechef: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+  },
+  { _id: false }
+);
+
+/**
+ * Resume Embedded Schema
+ */
+const resumeSchema = new mongoose.Schema(
+  {
+    url: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    publicId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    uploadedDate: {
+      type: Date,
+      default: null,
+    },
+  },
+  { _id: false }
+);
+
+/**
  * Profile Schema
  * Establishes a one-to-one relationship with the User model to store extended user profile information.
  */
@@ -239,6 +301,14 @@ const profileSchema = new mongoose.Schema(
     experience: {
       type: [experienceSchema],
       default: [],
+    },
+    socialLinks: {
+      type: socialLinksSchema,
+      default: {},
+    },
+    resume: {
+      type: resumeSchema,
+      default: {},
     },
   },
   {

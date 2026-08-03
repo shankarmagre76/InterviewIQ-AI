@@ -191,6 +191,58 @@ export const deleteExperienceHandler = asyncHandler(async (req, res) => {
   return new ApiResponse(200, null, 'Experience record deleted successfully').send(res);
 });
 
+/* ==========================================================================
+   Social Links Handlers
+   ========================================================================== */
+
+/**
+ * @desc    Get social links of logged-in user profile
+ * @route   GET /api/v1/profile/social-links
+ * @access  Private (JWT Protected)
+ */
+export const getSocialLinksHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const socialLinks = await profileService.getSocialLinks(userId);
+  return new ApiResponse(200, socialLinks, 'Social links retrieved successfully').send(res);
+});
+
+/**
+ * @desc    Update social links of logged-in user profile
+ * @route   PUT /api/v1/profile/social-links
+ * @access  Private (JWT Protected)
+ */
+export const updateSocialLinksHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const updatedSocialLinks = await profileService.updateSocialLinks(userId, req.body);
+  return new ApiResponse(200, updatedSocialLinks, 'Social links updated successfully').send(res);
+});
+
+/* ==========================================================================
+   Resume Handlers
+   ========================================================================== */
+
+/**
+ * @desc    Get resume details of logged-in user profile
+ * @route   GET /api/v1/profile/resume
+ * @access  Private (JWT Protected)
+ */
+export const getResumeHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const resume = await profileService.getResume(userId);
+  return new ApiResponse(200, resume, 'Resume details retrieved successfully').send(res);
+});
+
+/**
+ * @desc    Update resume details of logged-in user profile
+ * @route   PUT /api/v1/profile/resume
+ * @access  Private (JWT Protected)
+ */
+export const updateResumeHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const updatedResume = await profileService.updateResume(userId, req.body);
+  return new ApiResponse(200, updatedResume, 'Resume details updated successfully').send(res);
+});
+
 /**
  * @desc    Delete user profile
  * @route   DELETE /api/v1/profile
