@@ -36,21 +36,33 @@ export const updateProfileValidation = [
     .optional()
     .isIn(['Male', 'Female', 'Other', 'Prefer not to say', ''])
     .withMessage('Invalid gender choice'),
-  body('bio')
-    .optional()
-    .trim()
-    .isLength({ max: 500 })
-    .withMessage('Bio cannot exceed 500 characters'),
+  body('dateOfBirth')
+    .optional({ nullable: true, checkFalsy: true })
+    .isISO8601()
+    .withMessage('Please provide a valid ISO8601 date of birth (YYYY-MM-DD)'),
   body('headline')
     .optional()
     .trim()
     .isLength({ max: 100 })
     .withMessage('Headline cannot exceed 100 characters'),
+  body('bio')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Bio cannot exceed 500 characters'),
+  body('website')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('Please provide a valid website URL'),
   body('currentLocation')
     .optional()
     .trim()
     .isLength({ max: 100 })
-    .withMessage('Location cannot exceed 100 characters'),
-  body('website').optional().trim(),
-  body('profileImage').optional().trim(),
+    .withMessage('Current location cannot exceed 100 characters'),
+  body('preferredLocation')
+    .optional()
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Preferred location cannot exceed 100 characters'),
 ];
