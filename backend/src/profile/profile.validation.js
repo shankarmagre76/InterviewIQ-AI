@@ -1,4 +1,4 @@
-import { body, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 import ApiError from '../utils/ApiError.js';
 
 /**
@@ -154,4 +154,51 @@ export const updateProfileValidation = [
     .trim()
     .isLength({ max: 100 })
     .withMessage('Preferred location cannot exceed 100 characters'),
+];
+
+/**
+ * Validation rules for adding a skill to profile
+ */
+export const addSkillValidation = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Skill name is required')
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Skill name must be between 1 and 50 characters'),
+  body('level')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isIn(['Beginner', 'Intermediate', 'Advanced'])
+    .withMessage('Skill level must be one of: Beginner, Intermediate, Advanced'),
+];
+
+/**
+ * Validation rules for updating a skill in profile
+ */
+export const updateSkillValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid skill ID format'),
+  body('name')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Skill name cannot be empty')
+    .isLength({ min: 1, max: 50 })
+    .withMessage('Skill name must be between 1 and 50 characters'),
+  body('level')
+    .optional()
+    .trim()
+    .isIn(['Beginner', 'Intermediate', 'Advanced'])
+    .withMessage('Skill level must be one of: Beginner, Intermediate, Advanced'),
+];
+
+/**
+ * Validation rules for skill ID URL parameter
+ */
+export const skillIdParamValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid skill ID format'),
 ];

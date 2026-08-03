@@ -42,6 +42,52 @@ export const uploadProfileImageHandler = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    Add a new skill to user profile
+ * @route   POST /api/v1/profile/skills
+ * @access  Private (JWT Protected)
+ */
+export const addSkillHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const skills = await profileService.addSkill(userId, req.body);
+  return new ApiResponse(201, skills, 'Skill added successfully').send(res);
+});
+
+/**
+ * @desc    Get all skills of logged-in user profile
+ * @route   GET /api/v1/profile/skills
+ * @access  Private (JWT Protected)
+ */
+export const getSkillsHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const skills = await profileService.getSkills(userId);
+  return new ApiResponse(200, skills, 'Skills retrieved successfully').send(res);
+});
+
+/**
+ * @desc    Update an existing skill in user profile
+ * @route   PUT /api/v1/profile/skills/:id
+ * @access  Private (JWT Protected)
+ */
+export const updateSkillHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const skillId = req.params.id;
+  const updatedSkill = await profileService.updateSkill(userId, skillId, req.body);
+  return new ApiResponse(200, updatedSkill, 'Skill updated successfully').send(res);
+});
+
+/**
+ * @desc    Delete a skill from user profile
+ * @route   DELETE /api/v1/profile/skills/:id
+ * @access  Private (JWT Protected)
+ */
+export const deleteSkillHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const skillId = req.params.id;
+  await profileService.deleteSkill(userId, skillId);
+  return new ApiResponse(200, null, 'Skill deleted successfully').send(res);
+});
+
+/**
  * @desc    Delete user profile
  * @route   DELETE /api/v1/profile
  * @access  Private (JWT Protected)

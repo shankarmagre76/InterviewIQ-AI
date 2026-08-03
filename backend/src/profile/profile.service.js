@@ -125,6 +125,125 @@ class ProfileService {
   }
 
   /**
+   * Add a new skill to user profile
+   * @param {string} userId
+   * @param {object} skillData - { name, level }
+   * @returns {Promise<Array>} Updated skills array
+   */
+  async addSkill(userId, { name, level }) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to add skill');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const normalizedName = name.trim().toLowerCase();
+    const isDuplicate = profile.skills.some(
+      (skill) => skill.name.trim().toLowerCase() === normalizedName
+    );
+
+    if (isDuplicate) {
+      throw ApiError.badRequest(`Skill "${name.trim()}" already exists in your profile`);
+    }
+
+    profile.skills.push({
+      name: name.trim(),
+      level: level || 'Beginner',
+    });
+
+    await profile.save();
+    return profile.skills;
+  }
+
+  /**
+   * Fetch all skills of logged-in user profile
+   * @param {string} userId
+   * @returns {Promise<Array>} List of skills
+   */
+  async getSkills(userId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to fetch skills');
+    }
+
+    const profile = await Profile.findOne({ user: userId }).select('skills');
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    return profile.skills;
+  }
+
+  /**
+   * Update an existing skill in user profile by skill ID
+   * @param {string} userId
+   * @param {string} skillId
+   * @param {object} updateData - { name, level }
+   * @returns {Promise<object>} Updated skill subdocument
+   */
+  async updateSkill(userId, skillId, { name, level }) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to update skill');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const skill = profile.skills.id(skillId);
+    if (!skill) {
+      throw ApiError.notFound('Skill not found in user profile');
+    }
+
+    if (name !== undefined) {
+      const normalizedName = name.trim().toLowerCase();
+      const isDuplicate = profile.skills.some(
+        (s) => s._id.toString() !== skillId && s.name.trim().toLowerCase() === normalizedName
+      );
+      if (isDuplicate) {
+        throw ApiError.badRequest(`Another skill named "${name.trim()}" already exists`);
+      }
+      skill.name = name.trim();
+    }
+
+    if (level !== undefined) {
+      skill.level = level;
+    }
+
+    await profile.save();
+    return skill;
+  }
+
+  /**
+   * Delete a skill from user profile by skill ID
+   * @param {string} userId
+   * @param {string} skillId
+   * @returns {Promise<boolean>} True upon deletion
+   */
+  async deleteSkill(userId, skillId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to delete skill');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const skill = profile.skills.id(skillId);
+    if (!skill) {
+      throw ApiError.notFound('Skill not found in user profile');
+    }
+
+    profile.skills.pull(skillId);
+    await profile.save();
+    return true;
+  }
+
+  /**
    * Delete user profile by user ID
    * @param {string} userId
    * @returns {Promise<boolean>}
