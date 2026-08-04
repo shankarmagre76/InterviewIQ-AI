@@ -243,6 +243,34 @@ export const updateResumeHandler = asyncHandler(async (req, res) => {
   return new ApiResponse(200, updatedResume, 'Resume details updated successfully').send(res);
 });
 
+/**
+ * @desc    Upload resume document to Cloudinary and update user profile
+ * @route   POST /api/v1/profile/resume
+ * @access  Private (JWT Protected)
+ */
+export const uploadResumeHandler = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    throw ApiError.badRequest('No resume file uploaded. Please attach a PDF, DOC, or DOCX file.');
+  }
+
+  const userId = req.user?._id || req.user?.id;
+  const resume = await profileService.uploadResume(userId, req.file);
+
+  return new ApiResponse(200, resume, 'Resume uploaded successfully').send(res);
+});
+
+/**
+ * @desc    Delete resume document from Cloudinary and clear profile resume data
+ * @route   DELETE /api/v1/profile/resume
+ * @access  Private (JWT Protected)
+ */
+export const deleteResumeHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  await profileService.deleteResume(userId);
+  return new ApiResponse(200, null, 'Resume deleted successfully').send(res);
+});
+
+
 /* ==========================================================================
    Profile Completion Handler
    ========================================================================== */

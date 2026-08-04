@@ -196,6 +196,29 @@ const socialLinksSchema = new mongoose.Schema(
  */
 const resumeSchema = new mongoose.Schema(
   {
+    resumeUrl: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    cloudinaryPublicId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    originalFileName: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    fileSize: {
+      type: Number,
+      default: 0,
+    },
+    uploadedAt: {
+      type: Date,
+      default: null,
+    },
     url: {
       type: String,
       trim: true,
@@ -213,6 +236,7 @@ const resumeSchema = new mongoose.Schema(
   },
   { _id: false }
 );
+
 
 /**
  * Profile Schema

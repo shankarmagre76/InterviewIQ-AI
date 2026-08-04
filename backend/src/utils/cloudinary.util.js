@@ -9,6 +9,20 @@ import logger from './logger.js';
  */
 export const uploadToCloudinary = (fileBuffer, folder = 'interviewiq/profiles') => {
   return new Promise((resolve, reject) => {
+    if (
+      process.env.CLOUDINARY_CLOUD_NAME === 'demo_cloud_name' ||
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      process.env.CLOUDINARY_API_SECRET === 'sample_cloudinary_api_secret'
+    ) {
+      logger.warn('Cloudinary using demo credentials. Simulating image upload for development.');
+      const timestamp = Date.now();
+      const mockPublicId = `${folder}/image_mock_${timestamp}`;
+      return resolve({
+        public_id: mockPublicId,
+        secure_url: `https://res.cloudinary.com/demo/image/upload/v${timestamp}/${mockPublicId}.jpg`,
+      });
+    }
+
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
@@ -39,6 +53,15 @@ export const deleteFromCloudinary = async (imageUrl) => {
     return;
   }
 
+  if (
+    process.env.CLOUDINARY_CLOUD_NAME === 'demo_cloud_name' ||
+    !process.env.CLOUDINARY_CLOUD_NAME ||
+    process.env.CLOUDINARY_API_SECRET === 'sample_cloudinary_api_secret'
+  ) {
+    logger.info(`Simulated Cloudinary image deletion for demo environment: ${imageUrl}`);
+    return;
+  }
+
   try {
     // Regex matching Cloudinary asset public_id from secure URL format
     const regex = /\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z0-9]+$/;
@@ -52,3 +75,79 @@ export const deleteFromCloudinary = async (imageUrl) => {
     logger.warn(`Failed to delete previous Cloudinary asset: ${error.message}`);
   }
 };
+
+/**
+ * Upload raw document Buffer (PDF, DOC, DOCX) to Cloudinary via upload_stream
+ * @param {Buffer} fileBuffer - Document file buffer
+ * @param {string} folder - Target Cloudinary folder
+ * @returns {Promise<object>} Cloudinary upload response object containing secure_url and public_id
+ */
+export const uploadRawToCloudinary = (fileBuffer, folder = 'interviewiq/resumes') => {
+  return new Promise((resolve, reject) => {
+    if (
+      process.env.CLOUDINARY_CLOUD_NAME === 'demo_cloud_name' ||
+      !process.env.CLOUDINARY_CLOUD_NAME ||
+      process.env.CLOUDINARY_API_SECRET === 'sample_cloudinary_api_secret'
+    ) {
+      logger.warn('Cloudinary using demo credentials. Simulating raw document upload for development.');
+      const timestamp = Date.now();
+      const mockPublicId = `${folder}/resume_mock_${timestamp}`;
+      return resolve({
+        public_id: mockPublicId,
+        secure_url: `https://res.cloudinary.com/demo/raw/upload/v${timestamp}/${mockPublicId}.pdf`,
+      });
+    }
+
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: 'raw',
+      },
+      (error, result) => {
+        if (error) {
+          logger.error(`Cloudinary raw upload failed: ${error.message}`);
+          return reject(error);
+        }
+        resolve(result);
+      }
+    );
+    uploadStream.end(fileBuffer);
+  });
+};
+
+/**
+ * Destroy raw asset on Cloudinary using publicId or URL
+ * @param {string} publicIdOrUrl - Cloudinary publicId or full asset URL
+ */
+export const deleteRawFromCloudinary = async (publicIdOrUrl) => {
+  if (!publicIdOrUrl) {
+    return;
+  }
+
+  if (
+    process.env.CLOUDINARY_CLOUD_NAME === 'demo_cloud_name' ||
+    !process.env.CLOUDINARY_CLOUD_NAME ||
+    process.env.CLOUDINARY_API_SECRET === 'sample_cloudinary_api_secret'
+  ) {
+    logger.info(`Simulated Cloudinary raw document deletion for demo environment: ${publicIdOrUrl}`);
+    return;
+  }
+
+  try {
+    let publicId = publicIdOrUrl;
+    if (publicIdOrUrl.includes('cloudinary.com')) {
+      const regex = /\/upload\/(?:v\d+\/)?(.+)$/;
+      const match = publicIdOrUrl.match(regex);
+      if (match && match[1]) {
+        publicId = match[1];
+      }
+    }
+
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
+    logger.info(`Successfully deleted previous Cloudinary raw asset: ${publicId}`);
+  } catch (error) {
+    logger.warn(`Failed to delete previous Cloudinary raw asset: ${error.message}`);
+  }
+};
+
+

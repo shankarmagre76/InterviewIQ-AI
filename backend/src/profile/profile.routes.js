@@ -19,6 +19,8 @@ import {
   updateSocialLinksHandler,
   getResumeHandler,
   updateResumeHandler,
+  uploadResumeHandler,
+  deleteResumeHandler,
   getProfileCompletionHandler,
   deleteProfile,
 } from './profile.controller.js';
@@ -38,7 +40,8 @@ import {
   validate,
 } from './profile.validation.js';
 import authenticate from '../middleware/auth.middleware.js';
-import { handleSingleUpload } from '../middleware/upload.middleware.js';
+import { handleSingleUpload, handleResumeUpload } from '../middleware/upload.middleware.js';
+
 
 const router = Router();
 
@@ -193,6 +196,13 @@ router.put('/social-links', updateSocialLinksValidation, validate, updateSocialL
    ========================================================================== */
 
 /**
+ * @desc    Upload resume document (PDF, DOC, DOCX) to Cloudinary
+ * @route   POST /api/v1/profile/resume
+ * @access  Private (JWT Protected)
+ */
+router.post('/resume', handleResumeUpload('resume'), uploadResumeHandler);
+
+/**
  * @desc    Get resume details of logged-in user profile
  * @route   GET /api/v1/profile/resume
  * @access  Private (JWT Protected)
@@ -207,10 +217,18 @@ router.get('/resume', getResumeHandler);
 router.put('/resume', updateResumeValidation, validate, updateResumeHandler);
 
 /**
+ * @desc    Delete resume document from Cloudinary and clear profile resume details
+ * @route   DELETE /api/v1/profile/resume
+ * @access  Private (JWT Protected)
+ */
+router.delete('/resume', deleteResumeHandler);
+
+/**
  * @desc    Delete logged-in user's profile
  * @route   DELETE /api/v1/profile
  * @access  Private (JWT Protected)
  */
 router.delete('/', deleteProfile);
+
 
 export default router;

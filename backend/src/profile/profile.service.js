@@ -1,7 +1,13 @@
 import Profile from './profile.model.js';
 import User from '../models/User.js';
 import ApiError from '../utils/ApiError.js';
-import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.util.js';
+import {
+  uploadToCloudinary,
+  deleteFromCloudinary,
+  uploadRawToCloudinary,
+  deleteRawFromCloudinary,
+} from '../utils/cloudinary.util.js';
+
 
 class ProfileService {
   /**
@@ -572,9 +578,96 @@ class ProfileService {
     return profile.resume;
   }
 
+  /**
+   * Upload resume document to Cloudinary raw storage, delete previous document if exists, and save metadata
+   * @param {string} userId
+   * @param {object} file - Express.Multer.File object (buffer, originalname, size, mimetype)
+   * @returns {Promise<object>} Resume subdocument metadata
+   */
+  async uploadResume(userId, file) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to upload resume');
+    }
+    if (!file || !file.buffer) {
+      throw ApiError.badRequest('Please provide a valid resume file (PDF, DOC, DOCX)');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    // Delete existing Cloudinary raw asset if present
+    const existingPublicId = profile.resume?.cloudinaryPublicId || profile.resume?.publicId;
+    const existingUrl = profile.resume?.resumeUrl || profile.resume?.url;
+
+    if (existingPublicId || existingUrl) {
+      await deleteRawFromCloudinary(existingPublicId || existingUrl);
+    }
+
+    // Upload file buffer to Cloudinary raw storage
+    const cloudinaryResult = await uploadRawToCloudinary(file.buffer, 'interviewiq/resumes');
+    const now = new Date();
+
+    const resumeData = {
+      resumeUrl: cloudinaryResult.secure_url,
+      cloudinaryPublicId: cloudinaryResult.public_id,
+      originalFileName: file.originalname,
+      fileSize: file.size,
+      uploadedAt: now,
+      // Backward compatibility fields
+      url: cloudinaryResult.secure_url,
+      publicId: cloudinaryResult.public_id,
+      uploadedDate: now,
+    };
+
+    profile.resume = resumeData;
+    await profile.save();
+
+    return profile.resume;
+  }
+
+  /**
+   * Delete resume document from Cloudinary and reset profile resume metadata
+   * @param {string} userId
+   * @returns {Promise<boolean>} True upon deletion
+   */
+  async deleteResume(userId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to delete resume');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const existingPublicId = profile.resume?.cloudinaryPublicId || profile.resume?.publicId;
+    const existingUrl = profile.resume?.resumeUrl || profile.resume?.url;
+
+    if (existingPublicId || existingUrl) {
+      await deleteRawFromCloudinary(existingPublicId || existingUrl);
+    }
+
+    profile.resume = {
+      resumeUrl: '',
+      cloudinaryPublicId: '',
+      originalFileName: '',
+      fileSize: 0,
+      uploadedAt: null,
+      url: '',
+      publicId: '',
+      uploadedDate: null,
+    };
+
+    await profile.save();
+    return true;
+  }
+
   /* ==========================================================================
      Profile Completion Calculation Method
      ========================================================================== */
+
 
   /**
    * Calculate profile completion percentage based on 7 sections:
