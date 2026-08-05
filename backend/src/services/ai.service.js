@@ -3,6 +3,7 @@ import {
   buildResumeAnalysisPrompt,
   RESUME_ANALYSIS_PROMPT_VERSION,
 } from '../resume/resumeAnalysis.prompt.js';
+import aiResponseParserService from './aiResponseParser.service.js';
 import ApiError from '../utils/ApiError.js';
 import logger from '../utils/logger.js';
 
@@ -102,36 +103,13 @@ class GeminiProvider {
   }
 
   /**
-   * Parse and validate raw JSON text returned by AI model.
-   * Strips markdown fences if present and fills safe defaults for missing fields.
+   * Parse and validate raw JSON text returned by AI model via AiResponseParserService.
    *
-   * @param {string} rawResponse - Raw string output from AI
+   * @param {string|object} rawResponse - Raw output from AI
    * @returns {object} Validated structured JSON analysis object
    */
   parseAndValidateResponse(rawResponse) {
-    if (typeof rawResponse === 'object') {
-      return this.ensureSchemaDefaults(rawResponse);
-    }
-
-    let cleanedText = rawResponse.trim();
-
-    // Clean markdown code block wrappers (e.g. ```json ... ``` or ``` ...)
-    if (cleanedText.startsWith('```')) {
-      cleanedText = cleanedText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-    }
-
-    let parsedJson;
-    try {
-      parsedJson = JSON.parse(cleanedText);
-    } catch (parseError) {
-      logger.error(`Failed to parse AI response as JSON: ${parseError.message}`);
-      logger.debug(`Raw unparseable text: ${cleanedText}`);
-      throw ApiError.internal(
-        'AI provider returned malformed response. Failed to parse output as valid JSON.'
-      );
-    }
-
-    return this.ensureSchemaDefaults(parsedJson);
+    return aiResponseParserService.parseAndValidateAiResponse(rawResponse);
   }
 
   /**
