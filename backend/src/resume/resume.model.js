@@ -82,20 +82,16 @@ const resumeSchema = new mongoose.Schema(
       type: Number,
       required: [true, 'File size is required'],
       min: [1, 'File size must be greater than 0 bytes'],
-      max: [10 * 1024 * 1024, 'File size cannot exceed 10MB'],
+      max: [5 * 1024 * 1024, 'File size cannot exceed 5MB'],
     },
     mimeType: {
       type: String,
       required: [true, 'MIME type is required'],
       trim: true,
       enum: {
-        values: [
-          'application/pdf',
-          'application/msword',
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        ],
+        values: ['application/pdf'],
         message:
-          '{VALUE} is not a supported file type. Only PDF (.pdf), DOC (.doc), and DOCX (.docx) are allowed.',
+          '{VALUE} is not a supported file type. Only PDF (.pdf) documents are allowed.',
       },
     },
     isActive: {
