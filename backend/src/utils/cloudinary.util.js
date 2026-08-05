@@ -76,32 +76,46 @@ export const deleteFromCloudinary = async (imageUrl) => {
   }
 };
 
+import { v4 as uuidv4 } from 'uuid';
+
 /**
- * Upload raw document Buffer (PDF, DOC, DOCX) to Cloudinary via upload_stream
+ * Upload raw PDF document Buffer to Cloudinary via upload_stream
+ * Generates a unique public ID for every file to prevent name collision/overwriting.
+ *
  * @param {Buffer} fileBuffer - Document file buffer
- * @param {string} folder - Target Cloudinary folder
- * @returns {Promise<object>} Cloudinary upload response object containing secure_url and public_id
+ * @param {string} folder - Target Cloudinary folder (default: 'interviewiq/resumes')
+ * @param {string} [originalName='resume.pdf'] - Original file name for reference
+ * @returns {Promise<{ public_id: string, secure_url: string, url: string }>} Cloudinary upload response object
  */
-export const uploadRawToCloudinary = (fileBuffer, folder = 'interviewiq/resumes') => {
+export const uploadRawToCloudinary = (
+  fileBuffer,
+  folder = 'interviewiq/resumes',
+  originalName = 'resume.pdf'
+) => {
   return new Promise((resolve, reject) => {
+    // Generate unique public_id using UUID v4 and timestamp
+    const uniqueId = `resume_${Date.now()}_${uuidv4().substring(0, 8)}`;
+
     if (
       process.env.CLOUDINARY_CLOUD_NAME === 'demo_cloud_name' ||
       !process.env.CLOUDINARY_CLOUD_NAME ||
       process.env.CLOUDINARY_API_SECRET === 'sample_cloudinary_api_secret'
     ) {
-      logger.warn('Cloudinary using demo credentials. Simulating raw document upload for development.');
-      const timestamp = Date.now();
-      const mockPublicId = `${folder}/resume_mock_${timestamp}`;
+      logger.warn('Cloudinary using demo credentials. Simulating PDF resume upload for development.');
+      const mockPublicId = `${folder}/${uniqueId}`;
       return resolve({
         public_id: mockPublicId,
-        secure_url: `https://res.cloudinary.com/demo/raw/upload/v${timestamp}/${mockPublicId}.pdf`,
+        secure_url: `https://res.cloudinary.com/demo/raw/upload/v${Date.now()}/${mockPublicId}.pdf`,
+        url: `https://res.cloudinary.com/demo/raw/upload/v${Date.now()}/${mockPublicId}.pdf`,
       });
     }
 
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder,
+        public_id: uniqueId,
         resource_type: 'raw',
+        format: 'pdf',
       },
       (error, result) => {
         if (error) {
@@ -111,7 +125,13 @@ export const uploadRawToCloudinary = (fileBuffer, folder = 'interviewiq/resumes'
         resolve(result);
       }
     );
-    uploadStream.end(fileBuffer);
+
+    try {
+      uploadStream.end(fileBuffer);
+    } catch (streamError) {
+      logger.error(`Failed to pipe file buffer into Cloudinary upload stream: ${streamError.message}`);
+      reject(streamError);
+    }
   });
 };
 
