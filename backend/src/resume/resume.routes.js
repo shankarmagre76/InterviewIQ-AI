@@ -13,11 +13,15 @@ import {
 } from './resume.validation.js';
 import authenticate from '../middleware/auth.middleware.js';
 import { handleResumeUpload } from '../middleware/upload.middleware.js';
+import resumeAnalysisRoutes from './resumeAnalysis.routes.js';
 
 const router = Router();
 
 // Enforce JWT Authentication for all resume endpoints
 router.use(authenticate);
+
+// Mount AI Resume Analysis sub-router endpoints (/analyze, /analysis, /analysis/history, /analysis/:id)
+router.use('/', resumeAnalysisRoutes);
 
 /**
  * @desc    Upload new resume document (PDF only, max 5MB) or replace current active resume
