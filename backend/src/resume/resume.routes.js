@@ -46,11 +46,11 @@ router.get('/', getResume);
 router.get('/history', getResumeHistory);
 
 /**
- * @desc    Update resume metadata (e.g. original filename)
+ * @desc    Replace resume document or update resume metadata
  * @route   PUT /api/v1/profile/resume
  * @access  Private (JWT Protected)
  */
-router.put('/', updateResumeMetadataValidation, updateResume);
+router.put('/', handleResumeUpload('resume'), updateResume);
 
 /**
  * @desc    Delete active resume document from Cloudinary storage and database

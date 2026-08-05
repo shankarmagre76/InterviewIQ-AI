@@ -34,15 +34,28 @@ export const getResume = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Update resume metadata or active state
- * @route   PUT /api/v1/resumes/:id (or PATCH /api/v1/resumes/:id)
+ * @desc    Replace active resume document or update resume metadata
+ * @route   PUT /api/v1/profile/resume (also PUT /api/v1/resumes/:id)
  * @access  Private (JWT Protected)
  */
 export const updateResume = asyncHandler(async (req, res) => {
   const userId = req.user?._id || req.user?.id;
   const { id } = req.params;
 
-  const resume = await resumeService.getResumeById(userId, id);
+  // Branch A: Replacement file provided -> execute full file upload & Cloudinary replacement
+  if (req.file) {
+    const replacedResume = await resumeService.uploadOrReplaceResume(userId, req.file);
+    return new ApiResponse(200, replacedResume, 'Resume document replaced successfully').send(res);
+  }
+
+  // Branch B: JSON metadata update -> update resume document fields
+  let resume;
+  if (id) {
+    resume = await resumeService.getResumeById(userId, id);
+  } else {
+    resume = await resumeService.getActiveResumeByUser(userId);
+  }
+
   if (req.body.originalName) {
     resume.originalName = req.body.originalName.trim();
     await resume.save();
