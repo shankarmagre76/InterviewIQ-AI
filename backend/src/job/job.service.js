@@ -123,17 +123,19 @@ class JobService {
   }
 
   /**
-   * Search, filter, and paginate job listings.
-   * @param {object} queryParams - Search terms, filters, pagination
-   * @returns {Promise<object>} Paginated job results
+   * Search, filter, and paginate job listings with advanced query options.
+   * @param {object} queryParams - Search terms, filters, pagination, and sorting
+   * @returns {Promise<object>} Paginated job results with metadata
    */
   async searchJobs(queryParams = {}) {
     const {
+      keyword,
       search,
+      company,
+      companyName,
       workMode,
       employmentType,
       status,
-      company,
       location,
       skills,
       minSalary,
@@ -146,16 +148,26 @@ class JobService {
     } = queryParams;
 
     const filter = {};
-
     if (status) filter.status = status;
-    if (workMode) filter.workMode = workMode;
-    if (employmentType) filter.employmentType = employmentType;
-    if (company) filter.company = company;
-    if (location) filter.location = new RegExp(location.trim(), 'i');
+    if (company && typeof company === 'string' && company.match(/^[0-9a-fA-F]{24}$/)) {
+      filter.company = company;
+    }
+
+    // Helper to parse array or comma-separated string parameters
+    const parseListParam = (param) => {
+      if (!param) return undefined;
+      if (Array.isArray(param)) return param;
+      if (typeof param === 'string') return param.split(',').map((s) => s.trim()).filter(Boolean);
+      return undefined;
+    };
 
     const options = {
-      search,
-      skills: typeof skills === 'string' ? skills.split(',').map((s) => s.trim()) : skills,
+      keyword: keyword || search,
+      companyName,
+      location,
+      workMode: parseListParam(workMode),
+      employmentType: parseListParam(employmentType),
+      skills: parseListParam(skills),
       minSalary,
       maxSalary,
       minExp,

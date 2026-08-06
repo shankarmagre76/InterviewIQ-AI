@@ -71,71 +71,187 @@ class JobRepository {
   }
 
   /**
-   * Flexible job search, filter, and pagination query.
-   * @param {object} [filter={}] - Filter options (status, workMode, employmentType, company, location, skills, minSalary, maxSalary, minExp, maxExp)
-   * @param {object} [options={}] - Search string, sorting, limit, page
-   * @returns {Promise<{ jobs: Array, total: number, page: number, totalPages: number }>}
+   * Advanced job search, filter, and pagination using MongoDB Aggregation Pipeline.
+   * @param {object} [filter={}] - Base filter options
+   * @param {object} [options={}] - Search keyword, companyName, workMode, employmentType, skills, salary, experience, sorting, pagination
+   * @returns {Promise<{ jobs: Array, total: number, page: number, limit: number, totalPages: number, hasNextPage: boolean, hasPrevPage: boolean }>}
    */
   async searchJobs(filter = {}, options = {}) {
     const page = Math.max(1, parseInt(options.page || 1, 10));
-    const limit = Math.max(1, parseInt(options.limit || 10, 10));
+    const limit = Math.max(1, Math.min(100, parseInt(options.limit || 10, 10)));
     const skip = (page - 1) * limit;
-    const sort = options.sort || { createdAt: -1 };
 
-    const queryFilter = { ...filter };
+    const matchStage = { ...filter };
 
-    // Default filter active jobs if status not explicitly requested
-    if (!queryFilter.status) {
-      queryFilter.status = 'Active';
+    // Default status to Active if not specified
+    if (!matchStage.status) {
+      matchStage.status = 'Active';
     }
 
-    // Keyword Search (Full-text index or regex search)
-    if (options.search) {
-      const searchTrimmed = options.search.trim();
-      queryFilter.$or = [
-        { title: new RegExp(searchTrimmed, 'i') },
-        { location: new RegExp(searchTrimmed, 'i') },
-        { requiredSkills: new RegExp(searchTrimmed, 'i') },
+    // WorkMode normalization ('onsite' -> 'On-site')
+    if (options.workMode) {
+      if (Array.isArray(options.workMode)) {
+        matchStage.workMode = {
+          $in: options.workMode.map((wm) =>
+            wm.toLowerCase() === 'onsite' ? 'On-site' : wm
+          ),
+        };
+      } else if (typeof options.workMode === 'string') {
+        const normalizedWM =
+          options.workMode.toLowerCase() === 'onsite'
+            ? 'On-site'
+            : options.workMode;
+        matchStage.workMode = normalizedWM;
+      }
+    }
+
+    // Employment Type filtering
+    if (options.employmentType) {
+      if (Array.isArray(options.employmentType)) {
+        matchStage.employmentType = { $in: options.employmentType };
+      } else {
+        matchStage.employmentType = options.employmentType;
+      }
+    }
+
+    // Location search
+    if (options.location) {
+      matchStage.location = new RegExp(options.location.trim(), 'i');
+    }
+
+    // Keyword Search across title, description, location, requiredSkills, preferredSkills
+    if (options.keyword || options.search) {
+      const keywordTerm = (options.keyword || options.search).trim();
+      const keywordRegex = new RegExp(keywordTerm, 'i');
+      matchStage.$or = [
+        { title: keywordRegex },
+        { description: keywordRegex },
+        { location: keywordRegex },
+        { requiredSkills: keywordRegex },
+        { preferredSkills: keywordRegex },
       ];
     }
 
-    // Required Skills Matching (Matches any skill in array)
+    // Skills Filter (Matches any skill in input list)
     if (options.skills && Array.isArray(options.skills) && options.skills.length > 0) {
-      queryFilter.requiredSkills = { $in: options.skills.map((s) => new RegExp(s.trim(), 'i')) };
+      const skillRegexes = options.skills.map((s) => new RegExp(s.trim(), 'i'));
+      matchStage.$or = [
+        ...(matchStage.$or || []),
+        { requiredSkills: { $in: skillRegexes } },
+        { preferredSkills: { $in: skillRegexes } },
+      ];
     }
 
-    // Salary Min/Max Filtering
-    if (options.minSalary) {
-      queryFilter['salary.min'] = { $gte: Number(options.minSalary) };
+    // Salary Range Filtering
+    if (options.minSalary !== undefined && options.minSalary !== null && options.minSalary !== '') {
+      matchStage['salary.min'] = { $gte: Number(options.minSalary) };
     }
-    if (options.maxSalary) {
-      queryFilter['salary.max'] = { $lte: Number(options.maxSalary) };
-    }
-
-    // Experience Years Filtering
-    if (options.minExp !== undefined) {
-      queryFilter['experience.minYears'] = { $gte: Number(options.minExp) };
-    }
-    if (options.maxExp !== undefined) {
-      queryFilter['experience.maxYears'] = { $lte: Number(options.maxExp) };
+    if (options.maxSalary !== undefined && options.maxSalary !== null && options.maxSalary !== '') {
+      matchStage['salary.max'] = { $lte: Number(options.maxSalary) };
     }
 
-    const [jobs, total] = await Promise.all([
-      Job.find(queryFilter)
-        .sort(sort)
-        .skip(skip)
-        .limit(limit)
-        .populate('company', 'companyName companyLogo website headquarters industry companySize hiringStatus')
-        .populate('createdBy', 'firstName lastName email')
-        .exec(),
-      Job.countDocuments(queryFilter),
-    ]);
+    // Experience Range Filtering
+    if (options.minExp !== undefined && options.minExp !== null && options.minExp !== '') {
+      matchStage['experience.minYears'] = { $gte: Number(options.minExp) };
+    }
+    if (options.maxExp !== undefined && options.maxExp !== null && options.maxExp !== '') {
+      matchStage['experience.maxYears'] = { $lte: Number(options.maxExp) };
+    }
+
+    // Sorting stage
+    let sortStage = { createdAt: -1 }; // Default: Newest
+    const sortOption = (typeof options.sort === 'string' ? options.sort : 'newest').toLowerCase();
+
+    if (sortOption === 'oldest') {
+      sortStage = { createdAt: 1 };
+    } else if (sortOption === 'highest_salary' || sortOption === 'highestsalary') {
+      sortStage = { 'salary.max': -1, 'salary.min': -1 };
+    } else if (sortOption === 'lowest_salary' || sortOption === 'lowestsalary') {
+      sortStage = { 'salary.min': 1, 'salary.max': 1 };
+    } else if (sortOption === 'newest') {
+      sortStage = { createdAt: -1 };
+    } else if (typeof options.sort === 'object') {
+      sortStage = options.sort;
+    }
+
+    // Aggregation Pipeline
+    const pipeline = [
+      { $match: matchStage },
+
+      // Join Company Details
+      {
+        $lookup: {
+          from: 'companies',
+          localField: 'company',
+          foreignField: '_id',
+          as: 'company',
+        },
+      },
+      {
+        $unwind: {
+          path: '$company',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+    ];
+
+    // Optional company name search filter
+    if (options.companyName) {
+      pipeline.push({
+        $match: {
+          'company.companyName': new RegExp(options.companyName.trim(), 'i'),
+        },
+      });
+    }
+
+    // Join Creator User Details
+    pipeline.push(
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'createdBy',
+        },
+      },
+      {
+        $unwind: {
+          path: '$createdBy',
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      {
+        $project: {
+          'createdBy.password': 0,
+          'createdBy.refreshToken': 0,
+          'createdBy.resetPasswordToken': 0,
+          'createdBy.emailVerificationToken': 0,
+        },
+      }
+    );
+
+    // Single DB execution for data + total count metadata via $facet
+    pipeline.push({
+      $facet: {
+        metadata: [{ $count: 'total' }],
+        jobs: [{ $sort: sortStage }, { $skip: skip }, { $limit: limit }],
+      },
+    });
+
+    const [result] = await Job.aggregate(pipeline);
+
+    const total = result?.metadata[0]?.total || 0;
+    const jobs = result?.jobs || [];
+    const totalPages = Math.ceil(total / limit) || 1;
 
     return {
       jobs,
       total,
       page,
-      totalPages: Math.ceil(total / limit) || 1,
+      limit,
+      totalPages,
+      hasNextPage: page < totalPages,
+      hasPrevPage: page > 1,
     };
   }
 }
