@@ -34,8 +34,7 @@ const savedJobSchema = new mongoose.Schema(
 // Strict unique compound index: Prevents duplicate job bookmarks per user
 savedJobSchema.index({ user: 1, job: 1 }, { unique: true });
 
-// Single field indexes for relational lookups
-savedJobSchema.index({ user: 1 });
+// Single field index for relational lookup
 savedJobSchema.index({ job: 1 });
 
 // Compound index for querying user's saved jobs list sorted chronologically

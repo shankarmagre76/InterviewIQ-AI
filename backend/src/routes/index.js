@@ -3,6 +3,10 @@ import healthRoutes from './health.routes.js';
 import authRoutes from './auth.routes.js';
 import profileRoutes from '../profile/profile.routes.js';
 import resumeRoutes from '../resume/resume.routes.js';
+import companyRoutes from '../company/company.routes.js';
+import jobRoutes from '../job/job.routes.js';
+import applicationRoutes from '../application/application.routes.js';
+import savedJobRoutes from '../savedJob/savedJob.routes.js';
 import { getRoot, getApiIndex } from '../controllers/health.controller.js';
 
 const router = Router();
@@ -29,5 +33,21 @@ router.use('/api/resumes', resumeRoutes);
 // Mount profile sub-routes
 router.use('/api/v1/profile', profileRoutes);
 router.use('/api/profile', profileRoutes);
+
+// Mount Company sub-routes
+router.use('/api/v1/companies', companyRoutes);
+router.use('/api/companies', companyRoutes);
+
+// Mount Job sub-routes
+router.use('/api/v1/jobs', jobRoutes);
+router.use('/api/jobs', jobRoutes);
+
+// Mount Application sub-routes
+router.use('/api/v1/applications', applicationRoutes);
+router.use('/api/applications', applicationRoutes);
+
+// Mount Saved Job sub-routes
+router.use('/api/v1/saved-jobs', savedJobRoutes);
+router.use('/api/saved-jobs', savedJobRoutes);
 
 export default router;

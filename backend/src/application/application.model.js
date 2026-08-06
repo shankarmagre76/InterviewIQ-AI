@@ -112,7 +112,6 @@ const applicationSchema = new mongoose.Schema(
 applicationSchema.index({ user: 1, job: 1 }, { unique: true });
 
 // Single field indexes for relational lookups
-applicationSchema.index({ user: 1 });
 applicationSchema.index({ job: 1 });
 applicationSchema.index({ company: 1 });
 applicationSchema.index({ status: 1 });
