@@ -104,9 +104,6 @@ const interviewResultSchema = new mongoose.Schema(
    Indexes & Constraints for Performance & Data Integrity
    ========================================================================== */
 
-// Unique index: Enforces strictly 1-to-1 relationship between an Interview and its Result
-interviewResultSchema.index({ interview: 1 }, { unique: true });
-
 // Performance index for candidate dashboards, leaderboards & score analytics
 interviewResultSchema.index({ overallScore: -1 });
 
