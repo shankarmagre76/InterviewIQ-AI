@@ -7,6 +7,7 @@ import companyRoutes from '../company/company.routes.js';
 import jobRoutes from '../job/job.routes.js';
 import applicationRoutes from '../application/application.routes.js';
 import savedJobRoutes from '../savedJob/savedJob.routes.js';
+import interviewRoutes from '../interview/interview.routes.js';
 import { getRoot, getApiIndex } from '../controllers/health.controller.js';
 
 const router = Router();
@@ -49,5 +50,9 @@ router.use('/api/applications', applicationRoutes);
 // Mount Saved Job sub-routes
 router.use('/api/v1/saved-jobs', savedJobRoutes);
 router.use('/api/saved-jobs', savedJobRoutes);
+
+// Mount Interview sub-routes
+router.use('/api/v1/interviews', interviewRoutes);
+router.use('/api/interviews', interviewRoutes);
 
 export default router;
