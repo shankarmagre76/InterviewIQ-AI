@@ -333,31 +333,147 @@ class DashboardService {
   }
 
   /**
-   * Get Detailed Interviews Sub-Dashboard Data
+   * Calculate Phase 8.5 Interview Analytics metrics.
+   * Computes totals, status counts, score averages (ignoring incomplete sessions),
+   * competency breakdown averages (technical, communication, HR), score history time-series,
+   * performance by difficulty, and performance by interview type.
+   *
+   * @param {string} userId
+   * @returns {Promise<Object>} Chart-friendly interview analytics structure
+   */
+  async getInterviewAnalytics(userId) {
+    const rawData = await dashboardRepository.getInterviewAnalyticsData(userId);
+
+    const statusCounts = {
+      total: 0,
+      completed: 0,
+      inProgress: 0,
+      pending: 0,
+      cancelled: 0,
+    };
+
+    (rawData.statusStats || []).forEach((st) => {
+      statusCounts.total += st.count;
+      if (st._id === 'Completed') statusCounts.completed = st.count;
+      else if (st._id === 'In Progress') statusCounts.inProgress = st.count;
+      else if (st._id === 'Pending') statusCounts.pending = st.count;
+      else if (st._id === 'Cancelled') statusCounts.cancelled = st.count;
+    });
+
+    const completedResults = rawData.completedResults || [];
+    const completedCount = completedResults.length;
+
+    let averageScore = 0;
+    let bestScore = 0;
+    let latestScore = 0;
+    let previousScore = 0;
+    let scoreImprovement = 0;
+    let technicalAverage = 0;
+    let communicationAverage = 0;
+    let hrAverage = 0;
+
+    if (completedCount > 0) {
+      const overallSum = completedResults.reduce((acc, r) => acc + (r.overallScore || 0), 0);
+      const techSum = completedResults.reduce((acc, r) => acc + (r.technicalScore || 0), 0);
+      const commSum = completedResults.reduce((acc, r) => acc + (r.communicationScore || 0), 0);
+      const hrSum = completedResults.reduce((acc, r) => acc + (r.hrScore || 0), 0);
+
+      averageScore = parseFloat((overallSum / completedCount).toFixed(1));
+      bestScore = Math.max(...completedResults.map((r) => r.overallScore || 0));
+      technicalAverage = parseFloat((techSum / completedCount).toFixed(1));
+      communicationAverage = parseFloat((commSum / completedCount).toFixed(1));
+      hrAverage = parseFloat((hrSum / completedCount).toFixed(1));
+
+      // Latest score is the last item in chronologically sorted array
+      latestScore = completedResults[completedCount - 1].overallScore || 0;
+      if (completedCount > 1) {
+        previousScore = completedResults[completedCount - 2].overallScore || 0;
+        scoreImprovement = latestScore - previousScore;
+      }
+    }
+
+    // Performance by difficulty
+    const performanceByDifficulty = {
+      Beginner: { total: 0, completed: 0, avgScore: 0 },
+      Intermediate: { total: 0, completed: 0, avgScore: 0 },
+      Advanced: { total: 0, completed: 0, avgScore: 0 },
+    };
+
+    (rawData.difficultyStats || []).forEach((diff) => {
+      const key = diff._id || 'Intermediate';
+      if (performanceByDifficulty[key]) {
+        performanceByDifficulty[key].total = diff.total || 0;
+        performanceByDifficulty[key].completed = diff.completed || 0;
+        const validScores = diff.scores || [];
+        if (validScores.length > 0) {
+          const sum = validScores.reduce((a, b) => a + b, 0);
+          performanceByDifficulty[key].avgScore = parseFloat((sum / validScores.length).toFixed(1));
+        }
+      }
+    });
+
+    // Performance by interview type
+    const performanceByType = {
+      Technical: { total: 0, completed: 0, avgScore: 0 },
+      HR: { total: 0, completed: 0, avgScore: 0 },
+      Behavioral: { total: 0, completed: 0, avgScore: 0 },
+      Mixed: { total: 0, completed: 0, avgScore: 0 },
+    };
+
+    (rawData.typeStats || []).forEach((t) => {
+      const key = t._id || 'Technical';
+      if (performanceByType[key]) {
+        performanceByType[key].total = t.total || 0;
+        performanceByType[key].completed = t.completed || 0;
+        const validScores = t.scores || [];
+        if (validScores.length > 0) {
+          const sum = validScores.reduce((a, b) => a + b, 0);
+          performanceByType[key].avgScore = parseFloat((sum / validScores.length).toFixed(1));
+        }
+      }
+    });
+
+    // Score history time-series formatted for frontend charts
+    const scoreHistory = completedResults.map((r) => ({
+      score: r.overallScore,
+      date: r.date,
+      role: r.role,
+      interviewType: r.interviewType,
+      difficulty: r.difficulty,
+      technicalScore: r.technicalScore,
+      communicationScore: r.communicationScore,
+      hrScore: r.hrScore,
+      interviewId: r.interviewId,
+    }));
+
+    return {
+      total: statusCounts.total,
+      completed: statusCounts.completed,
+      inProgress: statusCounts.inProgress,
+      pending: statusCounts.pending,
+      cancelled: statusCounts.cancelled,
+      averageScore,
+      bestScore,
+      latestScore,
+      previousScore,
+      scoreImprovement,
+      technicalAverage,
+      communicationAverage,
+      hrAverage,
+      scoreHistory,
+      performanceByDifficulty,
+      performanceByType,
+      recentInterviews: rawData.recentInterviews || [],
+    };
+  }
+
+  /**
+   * Get Detailed Interviews Sub-Dashboard Data (Alias / wrapper for getInterviewAnalytics)
    * @param {string} userId
    * @returns {Promise<Object>} Interview sub-dashboard payload
    */
   async getInterviewDashboard(userId) {
-    const [metrics, scoreHistory] = await Promise.all([
-      dashboardRepository.getInterviewStats(userId),
-      dashboardRepository.getInterviewScoreHistory(userId),
-    ]);
-
-    return {
-      summary: {
-        total: metrics.total,
-        completed: metrics.completed,
-        inProgress: metrics.inProgress,
-        pending: metrics.pending,
-        cancelled: metrics.cancelled,
-        averageScore: metrics.averageScore,
-        bestScore: metrics.bestScore,
-        latestScore: metrics.latestScore,
-      },
-      scoreDistribution: metrics.scoreDistribution,
-      scoreHistory: scoreHistory || [],
-      recentInterviews: metrics.recentInterviews || [],
-    };
+    return await this.getInterviewAnalytics(userId);
   }
 
   /**

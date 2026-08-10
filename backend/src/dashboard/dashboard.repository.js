@@ -723,6 +723,139 @@ class DashboardRepository {
       chronologicalHistory: chronologicalHistory || [],
     };
   }
+
+  /**
+   * 11. Retrieve raw interview analytics metrics grouped by status, type, difficulty, and chronological score history.
+   * Runs parallel aggregation pipelines joining Interview and InterviewResult documents.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Object>} Raw interview analytics database metrics
+   */
+  async getInterviewAnalyticsData(userId) {
+    const userObjectId = this.toObjectId(userId);
+
+    const [statusStats, difficultyStats, typeStats, completedResults, recentInterviews] =
+      await Promise.all([
+        // 1. Group status counts
+        Interview.aggregate([
+          { $match: { user: userObjectId } },
+          {
+            $group: {
+              _id: '$status',
+              count: { $sum: 1 },
+            },
+          },
+        ]),
+
+        // 2. Group by difficulty with completed count and score lookup
+        Interview.aggregate([
+          { $match: { user: userObjectId } },
+          {
+            $lookup: {
+              from: 'interviewresults',
+              localField: '_id',
+              foreignField: 'interview',
+              as: 'result',
+            },
+          },
+          {
+            $group: {
+              _id: '$difficulty',
+              total: { $sum: 1 },
+              completed: {
+                $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] },
+              },
+              scores: {
+                $push: {
+                  $cond: [
+                    { $and: [{ $eq: ['$status', 'Completed'] }, { $gt: [{ $size: '$result' }, 0] }] },
+                    { $arrayElemAt: ['$result.overallScore', 0] },
+                    '$$REMOVE',
+                  ],
+                },
+              },
+            },
+          },
+        ]),
+
+        // 3. Group by interviewType with completed count and score lookup
+        Interview.aggregate([
+          { $match: { user: userObjectId } },
+          {
+            $lookup: {
+              from: 'interviewresults',
+              localField: '_id',
+              foreignField: 'interview',
+              as: 'result',
+            },
+          },
+          {
+            $group: {
+              _id: '$interviewType',
+              total: { $sum: 1 },
+              completed: {
+                $sum: { $cond: [{ $eq: ['$status', 'Completed'] }, 1, 0] },
+              },
+              scores: {
+                $push: {
+                  $cond: [
+                    { $and: [{ $eq: ['$status', 'Completed'] }, { $gt: [{ $size: '$result' }, 0] }] },
+                    { $arrayElemAt: ['$result.overallScore', 0] },
+                    '$$REMOVE',
+                  ],
+                },
+              },
+            },
+          },
+        ]),
+
+        // 4. Chronological history of completed interviews joined with InterviewResult
+        Interview.aggregate([
+          { $match: { user: userObjectId, status: 'Completed' } },
+          {
+            $lookup: {
+              from: 'interviewresults',
+              localField: '_id',
+              foreignField: 'interview',
+              as: 'result',
+            },
+          },
+          { $unwind: '$result' },
+          { $sort: { completedAt: 1, createdAt: 1 } },
+          {
+            $project: {
+              _id: 0,
+              interviewId: '$_id',
+              role: 1,
+              interviewType: 1,
+              difficulty: 1,
+              overallScore: '$result.overallScore',
+              technicalScore: { $ifNull: ['$result.technicalScore', '$result.overallScore'] },
+              communicationScore: { $ifNull: ['$result.communicationScore', '$result.overallScore'] },
+              hrScore: { $ifNull: ['$result.hrScore', '$result.overallScore'] },
+              date: { $ifNull: ['$completedAt', '$createdAt'] },
+            },
+          },
+        ]),
+
+        // 5. Recent 5 interview sessions
+        Interview.find(
+          { user: userObjectId },
+          { _id: 1, role: 1, interviewType: 1, difficulty: 1, status: 1, createdAt: 1 }
+        )
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .lean(),
+      ]);
+
+    return {
+      statusStats,
+      difficultyStats,
+      typeStats,
+      completedResults,
+      recentInterviews,
+    };
+  }
 }
 
 export default new DashboardRepository();

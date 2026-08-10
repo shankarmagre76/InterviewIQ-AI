@@ -94,19 +94,21 @@ async function runDashboardTests() {
     assert(typeof dashboardRepository.getInterviewScoreHistory === 'function', '16. getInterviewScoreHistory method exists');
     assert(typeof dashboardRepository.getApplicationStatusStats === 'function', '17. getApplicationStatusStats method exists');
     assert(typeof dashboardRepository.getResumeAnalyticsData === 'function', '18. getResumeAnalyticsData method exists');
+    assert(typeof dashboardRepository.getInterviewAnalyticsData === 'function', '19. getInterviewAnalyticsData method exists');
 
     // 5. DashboardService Methods Verification
-    assert(typeof dashboardService.getDashboard === 'function', '19. getDashboard method exists');
-    assert(typeof dashboardService.getResumeDashboard === 'function', '20. getResumeDashboard method exists');
-    assert(typeof dashboardService.getInterviewDashboard === 'function', '21. getInterviewDashboard method exists');
-    assert(typeof dashboardService.getApplicationDashboard === 'function', '22. getApplicationDashboard method exists');
-    assert(typeof dashboardService.getActivityDashboard === 'function', '23. getActivityDashboard method exists');
-    assert(typeof dashboardService.getResumeAnalytics === 'function', '24. getResumeAnalytics method exists');
+    assert(typeof dashboardService.getDashboard === 'function', '20. getDashboard method exists');
+    assert(typeof dashboardService.getResumeDashboard === 'function', '21. getResumeDashboard method exists');
+    assert(typeof dashboardService.getInterviewDashboard === 'function', '22. getInterviewDashboard method exists');
+    assert(typeof dashboardService.getApplicationDashboard === 'function', '23. getApplicationDashboard method exists');
+    assert(typeof dashboardService.getActivityDashboard === 'function', '24. getActivityDashboard method exists');
+    assert(typeof dashboardService.getResumeAnalytics === 'function', '25. getResumeAnalytics method exists');
+    assert(typeof dashboardService.getInterviewAnalytics === 'function', '26. getInterviewAnalytics method exists');
 
     // 6. Express App Router Mounting Test
     const routesStack = app._router.stack;
     const mainRouterLayer = routesStack.find((layer) => layer.name === 'router');
-    assert(!!mainRouterLayer, '25. Dashboard routes mounted in Express router pipeline');
+    assert(!!mainRouterLayer, '27. Dashboard routes mounted in Express router pipeline');
   } catch (err) {
     assert(false, 'Dashboard module verification exception', err.message);
   }
