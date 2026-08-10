@@ -1,4 +1,5 @@
 import dashboardRepository from './dashboard.repository.js';
+import careerScoreService from './careerScore.service.js';
 
 /**
  * Dashboard Service Layer
@@ -477,27 +478,157 @@ class DashboardService {
   }
 
   /**
-   * Get Detailed Applications Sub-Dashboard Data
+   * Calculate Phase 8.6 Job Application Analytics metrics.
+   * Computes totals, status breakdown, conversion rates (safe division by zero),
+   * status distribution, recruitment funnel, monthly trend, top companies, and location stats.
+   *
+   * @param {string} userId
+   * @returns {Promise<Object>} Chart-friendly application analytics payload
+   */
+  async getApplicationAnalytics(userId) {
+    const rawData = await dashboardRepository.getApplicationAnalyticsData(userId);
+
+    const statusCounts = {
+      applied: 0,
+      underReview: 0,
+      interviewScheduled: 0,
+      technicalRound: 0,
+      hrRound: 0,
+      offered: 0,
+      rejected: 0,
+      withdrawn: 0,
+    };
+
+    let total = 0;
+
+    (rawData.statusStats || []).forEach((st) => {
+      const count = st.count || 0;
+      total += count;
+
+      switch (st._id) {
+        case 'Applied':
+          statusCounts.applied = count;
+          break;
+        case 'Under Review':
+          statusCounts.underReview = count;
+          break;
+        case 'Interview Scheduled':
+          statusCounts.interviewScheduled = count;
+          break;
+        case 'Technical Round':
+          statusCounts.technicalRound = count;
+          break;
+        case 'HR Round':
+          statusCounts.hrRound = count;
+          break;
+        case 'Offered':
+          statusCounts.offered = count;
+          break;
+        case 'Rejected':
+          statusCounts.rejected = count;
+          break;
+        case 'Withdrawn':
+          statusCounts.withdrawn = count;
+          break;
+        default:
+          statusCounts.applied += count;
+      }
+    });
+
+    const interviewTotal =
+      statusCounts.interviewScheduled +
+      statusCounts.technicalRound +
+      statusCounts.hrRound;
+
+    // Conversion rate calculations with division-by-zero defense
+    const interviewConversionRate =
+      total > 0
+        ? parseFloat((((interviewTotal + statusCounts.offered) / total) * 100).toFixed(1))
+        : 0;
+
+    const offerConversionRate =
+      total > 0
+        ? parseFloat(((statusCounts.offered / total) * 100).toFixed(1))
+        : 0;
+
+    // Chart-friendly status distribution array
+    const statusDistribution = Object.entries(statusCounts)
+      .filter(([_, count]) => count > 0)
+      .map(([status, count]) => ({
+        status: status.replace(/([A-Z])/g, ' $1').trim(),
+        count,
+        percentage: parseFloat(((count / total) * 100).toFixed(1)),
+      }));
+
+    // Funnel stages progression metrics
+    const recruitmentFunnel = [
+      { stage: 'Applied', count: total, percentage: 100 },
+      {
+        stage: 'Under Review',
+        count: statusCounts.underReview + interviewTotal + statusCounts.offered,
+        percentage:
+          total > 0
+            ? parseFloat(
+                (
+                  ((statusCounts.underReview + interviewTotal + statusCounts.offered) /
+                    total) *
+                  100
+                ).toFixed(1)
+              )
+            : 0,
+      },
+      { stage: 'Interview', count: interviewTotal + statusCounts.offered, percentage: interviewConversionRate },
+      { stage: 'Offered', count: statusCounts.offered, percentage: offerConversionRate },
+    ];
+
+    // Format monthly application trend time-series for charts
+    const applicationTrend = (rawData.monthlyTrend || []).map((t) => ({
+      period: t._id,
+      count: t.count,
+    }));
+
+    // Top companies candidate applied to
+    const topCompanies = (rawData.companyStats || []).map((c) => ({
+      companyName: c.companyName || 'Unknown Company',
+      logo: c.logo || '',
+      count: c.count,
+    }));
+
+    // Distribution by job location
+    const byLocation = (rawData.locationStats || []).map((l) => ({
+      location: l._id,
+      count: l.count,
+    }));
+
+    return {
+      total,
+      applied: statusCounts.applied,
+      underReview: statusCounts.underReview,
+      interviewScheduled: statusCounts.interviewScheduled,
+      technicalRound: statusCounts.technicalRound,
+      hrRound: statusCounts.hrRound,
+      interviewTotal,
+      offered: statusCounts.offered,
+      rejected: statusCounts.rejected,
+      withdrawn: statusCounts.withdrawn,
+      interviewConversionRate,
+      offerConversionRate,
+      statusDistribution,
+      recruitmentFunnel,
+      applicationTrend,
+      topCompanies,
+      byLocation,
+      recentApplications: rawData.recentApplications || [],
+    };
+  }
+
+  /**
+   * Get Detailed Applications Sub-Dashboard Data (Alias / wrapper for getApplicationAnalytics)
    * @param {string} userId
    * @returns {Promise<Object>} Application sub-dashboard payload
    */
   async getApplicationDashboard(userId) {
-    const [statusStats, applicationMetrics] = await Promise.all([
-      dashboardRepository.getApplicationStatusStats(userId),
-      dashboardRepository.getApplicationStats(userId),
-    ]);
-
-    return {
-      summary: {
-        total: statusStats.total,
-        ...statusStats.statusBreakdown,
-        interviewConversionRate: statusStats.conversionRates.interviewConversionRate,
-        offerConversionRate: statusStats.conversionRates.offerConversionRate,
-      },
-      statusFunnel: statusStats.funnelStages,
-      conversionRates: statusStats.conversionRates,
-      recentApplications: applicationMetrics.recentApplications || [],
-    };
+    return await this.getApplicationAnalytics(userId);
   }
 
   /**
@@ -522,25 +653,13 @@ class DashboardService {
 
   /**
    * Get Standalone Career Readiness Sub-Dashboard Data
+   * Delegates scoring to CareerScoreService.
+   *
    * @param {string} userId
    * @returns {Promise<Object>} Career readiness payload
    */
   async getCareerReadinessDashboard(userId) {
-    const [profileStats, resumeMetrics, interviewMetrics, applicationMetrics] =
-      await Promise.all([
-        dashboardRepository.getProfileStats(userId),
-        dashboardRepository.getResumeStats(userId),
-        dashboardRepository.getInterviewStats(userId),
-        dashboardRepository.getApplicationStats(userId),
-      ]);
-
-    const profileScore = this.calculateProfileCompletion(profileStats);
-    return this.calculateCareerReadiness(
-      profileScore,
-      resumeMetrics,
-      interviewMetrics,
-      applicationMetrics
-    );
+    return await careerScoreService.calculateCareerReadiness(userId);
   }
 }
 

@@ -856,6 +856,117 @@ class DashboardRepository {
       recentInterviews,
     };
   }
+
+  /**
+   * 12. Retrieve raw job application analytics metrics (status counts, trend over time, top companies, by location).
+   * Runs parallel aggregation pipelines on Application collection with $lookup to Job and Company.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Object>} Raw application analytics database results
+   */
+  async getApplicationAnalyticsData(userId) {
+    const userObjectId = this.toObjectId(userId);
+
+    const [statusStats, monthlyTrend, companyStats, locationStats, recentApplications] =
+      await Promise.all([
+        // 1. Status breakdown counts
+        Application.aggregate([
+          { $match: { user: userObjectId } },
+          {
+            $group: {
+              _id: '$status',
+              count: { $sum: 1 },
+            },
+          },
+        ]),
+
+        // 2. Application trend over time (grouped by YYYY-MM)
+        Application.aggregate([
+          { $match: { user: userObjectId } },
+          {
+            $group: {
+              _id: {
+                $dateToString: {
+                  format: '%Y-%m',
+                  date: { $ifNull: ['$appliedAt', '$createdAt'] },
+                },
+              },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { _id: 1 } },
+        ]),
+
+        // 3. Top companies applied to
+        Application.aggregate([
+          { $match: { user: userObjectId } },
+          {
+            $lookup: {
+              from: 'companies',
+              localField: 'company',
+              foreignField: '_id',
+              as: 'companyDoc',
+            },
+          },
+          { $unwind: { path: '$companyDoc', preserveNullAndEmptyArrays: true } },
+          {
+            $group: {
+              _id: '$company',
+              companyName: {
+                $first: {
+                  $ifNull: ['$companyDoc.companyName', '$companyDoc.name', 'Unknown Company'],
+                },
+              },
+              logo: { $first: '$companyDoc.companyLogo' },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { count: -1 } },
+          { $limit: 5 },
+        ]),
+
+        // 4. Applications by job location
+        Application.aggregate([
+          { $match: { user: userObjectId } },
+          {
+            $lookup: {
+              from: 'jobs',
+              localField: 'job',
+              foreignField: '_id',
+              as: 'jobDoc',
+            },
+          },
+          { $unwind: { path: '$jobDoc', preserveNullAndEmptyArrays: true } },
+          {
+            $group: {
+              _id: { $ifNull: ['$jobDoc.location', 'Remote / Unspecified'] },
+              count: { $sum: 1 },
+            },
+          },
+          { $sort: { count: -1 } },
+          { $limit: 5 },
+        ]),
+
+        // 5. Recent 5 applications with populated job & company
+        Application.find(
+          { user: userObjectId },
+          { _id: 1, job: 1, company: 1, status: 1, appliedAt: 1, interviewDate: 1, createdAt: 1 }
+        )
+          .populate('job', 'title location workMode employmentType')
+          .populate('company', 'companyName name companyLogo logo')
+          .sort({ appliedAt: -1, createdAt: -1 })
+          .limit(5)
+          .lean(),
+      ]);
+
+    return {
+      statusStats,
+      monthlyTrend,
+      companyStats,
+      locationStats,
+      recentApplications,
+    };
+  }
 }
 
 export default new DashboardRepository();

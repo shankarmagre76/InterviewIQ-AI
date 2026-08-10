@@ -108,3 +108,4 @@ export const getActivityStream = asyncHandler(async (req, res) => {
 // Method aliases for interface compliance
 export const getDashboard = getMainDashboard;
 export const getActivityDashboard = getActivityStream;
+export const getApplicationAnalytics = getApplicationDashboard;
