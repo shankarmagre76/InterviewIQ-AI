@@ -199,6 +199,138 @@ class AiResponseParserService {
     logger.info(`Successfully parsed & normalized AI analysis response (ATS Score: ${normalizedPayload.atsScore})`);
     return normalizedPayload;
   }
+
+  /**
+   * Complete validation and normalization pipeline for AI Learning Roadmap responses.
+   * Ensures schema compliance for roadmap title, skill gaps, phases, tasks, and resources.
+   *
+   * @param {string|object} rawInput - Raw text output from LLM or raw object
+   * @returns {object} Schema-compliant normalized LearningRoadmap object
+   */
+  parseAndValidateRoadmapResponse(rawInput) {
+    const data = this.parseJsonString(rawInput);
+
+    if (typeof data !== 'object' || data === null) {
+      throw ApiError.internal('Invalid AI roadmap response payload. Root element must be an object.');
+    }
+
+    const validPriorities = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+    const validTaskTypes = ['LEARNING', 'PRACTICE', 'PROJECT', 'CODING', 'INTERVIEW', 'REVIEW'];
+    const validResourceTypes = ['ARTICLE', 'VIDEO', 'DOCUMENTATION', 'COURSE', 'REPOSITORY', 'OTHER'];
+
+    const title =
+      typeof data.title === 'string' && data.title.trim().length > 0
+        ? data.title.trim()
+        : 'Targeted Career Development Roadmap';
+
+    const description =
+      typeof data.description === 'string' && data.description.trim().length > 0
+        ? data.description.trim()
+        : 'Structured learning path designed to bridge identified skill gaps and accelerate career readiness.';
+
+    const skillGaps = this.normalizeStringArray(data.skillGaps);
+
+    const rawPhases = Array.isArray(data.phases) ? data.phases : [];
+    const phases = rawPhases.map((phase, pIndex) => {
+      const pTitle =
+        typeof phase.title === 'string' && phase.title.trim().length > 0
+          ? phase.title.trim()
+          : `Phase ${pIndex + 1}: Core Skill Building`;
+
+      const pDesc =
+        typeof phase.description === 'string' ? phase.description.trim() : '';
+
+      const pSkills = this.normalizeStringArray(phase.skills);
+
+      const pPriority =
+        typeof phase.priority === 'string' && validPriorities.includes(phase.priority.toUpperCase())
+          ? phase.priority.toUpperCase()
+          : 'HIGH';
+
+      const pEstimatedDays = Math.max(1, Math.min(30, Number(phase.estimatedDays) || 7));
+      const pOrder = Number(phase.order) || pIndex + 1;
+
+      const rawTasks = Array.isArray(phase.tasks) ? phase.tasks : [];
+      const tasks = rawTasks.map((task, tIndex) => {
+        const tTitle =
+          typeof task.title === 'string' && task.title.trim().length > 0
+            ? task.title.trim()
+            : `Task ${tIndex + 1}: Technical Study & Practice`;
+
+        const tDesc = typeof task.description === 'string' ? task.description.trim() : '';
+
+        const tType =
+          typeof task.type === 'string' && validTaskTypes.includes(task.type.toUpperCase())
+            ? task.type.toUpperCase()
+            : 'LEARNING';
+
+        const tSkills = this.normalizeStringArray(task.skills);
+
+        const tPriority =
+          typeof task.priority === 'string' && validPriorities.includes(task.priority.toUpperCase())
+            ? task.priority.toUpperCase()
+            : 'MEDIUM';
+
+        const tEstimatedMinutes = Math.max(15, Math.min(180, Number(task.estimatedMinutes) || 45));
+        const tOrder = Number(task.order) || tIndex + 1;
+
+        const rawResources = Array.isArray(task.resources) ? task.resources : [];
+        const resources = rawResources.map((res) => {
+          const rTitle =
+            typeof res.title === 'string' && res.title.trim().length > 0
+              ? res.title.trim()
+              : 'Learning Resource';
+
+          let rUrl = typeof res.url === 'string' ? res.url.trim() : 'https://developer.mozilla.org/';
+          if (!/^https?:\/\//i.test(rUrl)) {
+            rUrl = `https://${rUrl}`;
+          }
+
+          const rType =
+            typeof res.type === 'string' && validResourceTypes.includes(res.type.toUpperCase())
+              ? res.type.toUpperCase()
+              : 'DOCUMENTATION';
+
+          return {
+            title: rTitle,
+            url: rUrl,
+            type: rType,
+          };
+        });
+
+        return {
+          title: tTitle,
+          description: tDesc,
+          type: tType,
+          skills: tSkills,
+          priority: tPriority,
+          estimatedMinutes: tEstimatedMinutes,
+          order: tOrder,
+          resources,
+        };
+      });
+
+      return {
+        title: pTitle,
+        description: pDesc,
+        skills: pSkills,
+        priority: pPriority,
+        estimatedDays: pEstimatedDays,
+        order: pOrder,
+        tasks,
+      };
+    });
+
+    const normalizedRoadmap = {
+      title,
+      description,
+      skillGaps,
+      phases,
+    };
+
+    logger.info(`Successfully parsed & normalized AI Learning Roadmap response (${phases.length} phases)`);
+    return normalizedRoadmap;
+  }
 }
 
 export default new AiResponseParserService();
