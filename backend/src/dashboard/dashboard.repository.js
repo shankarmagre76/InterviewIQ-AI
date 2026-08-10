@@ -9,271 +9,393 @@ import SavedJob from '../savedJob/savedJob.model.js';
 
 /**
  * Dashboard Repository Layer
- * Interacts directly with MongoDB models to retrieve and aggregate candidate data.
- * Contains NO HTTP or service business logic.
+ * Implements optimized MongoDB aggregation pipelines and database access logic
+ * for candidate dashboard statistics.
+ * Contains ZERO business logic.
  */
 class DashboardRepository {
   /**
-   * Fetch candidate profile data
-   * @param {string} userId
-   * @returns {Promise<Object|null>}
+   * Helper to ensure userId is converted to a valid Mongoose ObjectId instance.
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {mongoose.Types.ObjectId}
    */
-  async getProfileData(userId) {
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-    return await Profile.findOne({ user: userObjectId }).lean();
+  toObjectId(userId) {
+    if (userId instanceof mongoose.Types.ObjectId) return userId;
+    return new mongoose.Types.ObjectId(userId);
   }
 
   /**
-   * Fetch candidate resume and ATS analysis metrics
-   * @param {string} userId
-   * @returns {Promise<Object>}
+   * 1. Retrieve lightweight candidate profile statistics.
+   * Uses projection aggregation to compute section counts without loading heavy subdocuments.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Object>} Predictable profile statistics structure
    */
-  async getResumeMetrics(userId) {
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+  async getProfileStats(userId) {
+    const userObjectId = this.toObjectId(userId);
 
-    const [activeResume, analysisHistory, analysisCount] = await Promise.all([
-      Resume.findOne({ user: userObjectId, isActive: true }).lean(),
-      ResumeAnalysis.find({ user: userObjectId })
-        .sort({ createdAt: -1 })
-        .limit(10)
-        .lean(),
-      ResumeAnalysis.countDocuments({ user: userObjectId }),
+    const [stats] = await Profile.aggregate([
+      { $match: { user: userObjectId } },
+      {
+        $project: {
+          _id: 1,
+          user: 1,
+          headline: { $ifNull: ['$headline', ''] },
+          bio: { $ifNull: ['$bio', ''] },
+          skillsCount: { $size: { $ifNull: ['$skills', []] } },
+          educationCount: { $size: { $ifNull: ['$education', []] } },
+          experienceCount: { $size: { $ifNull: ['$experience', []] } },
+          hasSocialLinks: {
+            $gt: [
+              {
+                $size: {
+                  $objectToArray: { $ifNull: ['$socialLinks', {}] },
+                },
+              },
+              0,
+            ],
+          },
+          hasBasicInfo: {
+            $or: [
+              { $gt: [{ $strLenCP: { $ifNull: ['$phone', ''] } }, 0] },
+              { $gt: [{ $strLenCP: { $ifNull: ['$currentLocation', ''] } }, 0] },
+              { $ne: ['$dateOfBirth', null] },
+            ],
+          },
+        },
+      },
     ]);
 
-    const hasResume = !!activeResume || analysisCount > 0;
-    const latestAnalysis = analysisHistory[0] || null;
-    const previousAnalysis = analysisHistory[1] || null;
+    if (!stats) {
+      return {
+        hasProfile: false,
+        headline: '',
+        bio: '',
+        skillsCount: 0,
+        educationCount: 0,
+        experienceCount: 0,
+        hasSocialLinks: false,
+        hasBasicInfo: false,
+      };
+    }
 
     return {
-      hasResume,
-      activeResume,
-      latestAnalysis,
-      previousAnalysis,
-      analysisCount,
-      scoreHistory: analysisHistory.map((item) => ({
-        analysisId: item._id,
-        atsScore: item.atsScore,
-        date: item.createdAt || item.analyzedAt,
-      })),
+      hasProfile: true,
+      headline: stats.headline,
+      bio: stats.bio,
+      skillsCount: stats.skillsCount,
+      educationCount: stats.educationCount,
+      experienceCount: stats.experienceCount,
+      hasSocialLinks: stats.hasSocialLinks,
+      hasBasicInfo: stats.hasBasicInfo,
     };
   }
 
   /**
-   * Fetch candidate mock interview metrics
-   * @param {string} userId
-   * @returns {Promise<Object>}
+   * 2. Retrieve resume & ATS analysis statistics using MongoDB aggregation facets.
+   * Efficiently computes total analysis count, latest ATS score, previous ATS score,
+   * and score improvement in a single aggregation pipeline query.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Object>} Predictable resume metrics object
    */
-  async getInterviewMetrics(userId) {
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+  async getResumeStats(userId) {
+    const userObjectId = this.toObjectId(userId);
 
-    const [interviews, completedResults] = await Promise.all([
-      Interview.find({ user: userObjectId }).sort({ createdAt: -1 }).lean(),
-      InterviewResult.find()
-        .populate({
-          path: 'interview',
-          match: { user: userObjectId },
-          select: 'role interviewType difficulty status createdAt',
-        })
+    const [activeResume, analysisStats] = await Promise.all([
+      Resume.findOne(
+        { user: userObjectId, isActive: true },
+        { _id: 1, originalName: 1, url: 1, uploadedAt: 1 }
+      ).lean(),
+
+      ResumeAnalysis.aggregate([
+        { $match: { user: userObjectId } },
+        { $sort: { createdAt: -1 } },
+        {
+          $facet: {
+            totalCount: [{ $count: 'count' }],
+            latestTwo: [
+              { $limit: 2 },
+              {
+                $project: {
+                  _id: 1,
+                  atsScore: 1,
+                  summary: 1,
+                  strengths: 1,
+                  weaknesses: 1,
+                  missingSkills: 1,
+                  recommendedSkills: 1,
+                  sectionFeedback: 1,
+                  createdAt: 1,
+                },
+              },
+            ],
+          },
+        },
+      ]),
+    ]);
+
+    const facetResult = analysisStats[0] || {};
+    const totalCount = facetResult.totalCount?.[0]?.count || 0;
+    const latestTwo = facetResult.latestTwo || [];
+
+    const latestAnalysis = latestTwo[0] || null;
+    const previousAnalysis = latestTwo[1] || null;
+
+    const latestATSScore = latestAnalysis?.atsScore || 0;
+    const previousATSScore = previousAnalysis?.atsScore || 0;
+    const scoreImprovement = latestAnalysis ? latestATSScore - previousATSScore : 0;
+
+    return {
+      hasResume: !!activeResume || totalCount > 0,
+      latestATSScore,
+      previousATSScore,
+      scoreImprovement,
+      analysisCount: totalCount,
+      activeResume: activeResume || null,
+      latestAnalysis: latestAnalysis || null,
+    };
+  }
+
+  /**
+   * 3. Compute comprehensive mock interview performance statistics.
+   * Uses aggregation pipeline with $lookup to aggregate completed interview scores, best score,
+   * average score, competency breakdowns, and status distribution.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Object>} Predictable interview metrics structure
+   */
+  async getInterviewStats(userId) {
+    const userObjectId = this.toObjectId(userId);
+
+    const [statusStats, resultStats, recentInterviews] = await Promise.all([
+      // Aggregation 1: Count interviews grouped by status & type
+      Interview.aggregate([
+        { $match: { user: userObjectId } },
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 },
+          },
+        },
+      ]),
+
+      // Aggregation 2: Join completed interviews with InterviewResult for overall & competency averages
+      Interview.aggregate([
+        { $match: { user: userObjectId, status: 'Completed' } },
+        {
+          $lookup: {
+            from: 'interviewresults',
+            localField: '_id',
+            foreignField: 'interview',
+            as: 'result',
+          },
+        },
+        { $unwind: '$result' },
+        {
+          $group: {
+            _id: null,
+            completedCount: { $sum: 1 },
+            averageScore: { $avg: '$result.overallScore' },
+            bestScore: { $max: '$result.overallScore' },
+            latestScore: { $first: '$result.overallScore' },
+            technicalAvg: {
+              $avg: { $ifNull: ['$result.technicalScore', '$result.overallScore'] },
+            },
+            communicationAvg: {
+              $avg: { $ifNull: ['$result.communicationScore', '$result.overallScore'] },
+            },
+            hrAvg: {
+              $avg: { $ifNull: ['$result.hrScore', '$result.overallScore'] },
+            },
+          },
+        },
+      ]),
+
+      // Query 3: Recent 5 interview sessions projection
+      Interview.find(
+        { user: userObjectId },
+        { _id: 1, role: 1, interviewType: 1, difficulty: 1, status: 1, createdAt: 1 }
+      )
         .sort({ createdAt: -1 })
+        .limit(5)
         .lean(),
     ]);
 
-    // Filter results strictly belonging to this user
-    const userResults = completedResults.filter(
-      (res) => res.interview && res.interview !== null
-    );
-
-    const total = interviews.length;
-    const completed = interviews.filter((i) => i.status === 'Completed').length;
-    const inProgress = interviews.filter((i) => i.status === 'In Progress').length;
-    const pending = interviews.filter((i) => i.status === 'Pending').length;
-
-    let averageScore = 0;
-    let bestScore = 0;
-    let latestScore = 0;
-
-    if (userResults.length > 0) {
-      const sumScores = userResults.reduce(
-        (acc, curr) => acc + (curr.overallScore || 0),
-        0
-      );
-      averageScore = parseFloat((sumScores / userResults.length).toFixed(1));
-      bestScore = Math.max(...userResults.map((r) => r.overallScore || 0));
-      latestScore = userResults[0].overallScore || 0;
-    }
-
-    // Performance breakdown by interview type
-    const byType = {
-      Technical: { total: 0, completed: 0, sumScore: 0, countScore: 0 },
-      HR: { total: 0, completed: 0, sumScore: 0, countScore: 0 },
-      Behavioral: { total: 0, completed: 0, sumScore: 0, countScore: 0 },
-      Mixed: { total: 0, completed: 0, sumScore: 0, countScore: 0 },
+    const statusCounts = {
+      total: 0,
+      completed: 0,
+      inProgress: 0,
+      pending: 0,
+      cancelled: 0,
     };
 
-    interviews.forEach((inv) => {
-      const type = inv.interviewType || 'Technical';
-      if (byType[type]) {
-        byType[type].total += 1;
-        if (inv.status === 'Completed') {
-          byType[type].completed += 1;
-        }
-      }
+    statusStats.forEach((st) => {
+      statusCounts.total += st.count;
+      if (st._id === 'Completed') statusCounts.completed = st.count;
+      else if (st._id === 'In Progress') statusCounts.inProgress = st.count;
+      else if (st._id === 'Pending') statusCounts.pending = st.count;
+      else if (st._id === 'Cancelled') statusCounts.cancelled = st.count;
     });
 
-    userResults.forEach((res) => {
-      const type = res.interview?.interviewType || 'Technical';
-      if (byType[type]) {
-        byType[type].sumScore += res.overallScore || 0;
-        byType[type].countScore += 1;
-      }
-    });
-
-    Object.keys(byType).forEach((type) => {
-      const item = byType[type];
-      item.avgScore =
-        item.countScore > 0
-          ? parseFloat((item.sumScore / item.countScore).toFixed(1))
-          : 0;
-      delete item.sumScore;
-      delete item.countScore;
-    });
-
-    // Score distribution by competencies across completed results
-    let technicalSum = 0,
-      commSum = 0,
-      hrSum = 0,
-      resCount = userResults.length;
-    if (resCount > 0) {
-      userResults.forEach((r) => {
-        technicalSum += r.technicalScore || r.overallScore || 0;
-        commSum += r.communicationScore || r.overallScore || 0;
-        hrSum += r.hrScore || r.overallScore || 0;
-      });
-    }
+    const scores = resultStats[0] || {};
+    const averageScore = scores.averageScore ? parseFloat(scores.averageScore.toFixed(1)) : 0;
+    const bestScore = scores.bestScore || 0;
+    const latestScore = scores.latestScore || 0;
 
     const scoreDistribution = {
-      technicalScore: resCount > 0 ? parseFloat((technicalSum / resCount).toFixed(1)) : 0,
-      communicationScore: resCount > 0 ? parseFloat((commSum / resCount).toFixed(1)) : 0,
-      hrScore: resCount > 0 ? parseFloat((hrSum / resCount).toFixed(1)) : 0,
+      technicalScore: scores.technicalAvg ? parseFloat(scores.technicalAvg.toFixed(1)) : 0,
+      communicationScore: scores.communicationAvg ? parseFloat(scores.communicationAvg.toFixed(1)) : 0,
+      hrScore: scores.hrAvg ? parseFloat(scores.hrAvg.toFixed(1)) : 0,
     };
 
     return {
-      total,
-      completed,
-      inProgress,
-      pending,
+      total: statusCounts.total,
+      completed: statusCounts.completed,
+      inProgress: statusCounts.inProgress,
+      pending: statusCounts.pending,
+      cancelled: statusCounts.cancelled,
       averageScore,
       bestScore,
       latestScore,
-      byType,
       scoreDistribution,
-      recentInterviews: interviews.slice(0, 5),
+      recentInterviews,
     };
   }
 
   /**
-   * Fetch candidate job application metrics
-   * @param {string} userId
-   * @returns {Promise<Object>}
+   * 4. Aggregate candidate job application counts & conversion metrics.
+   * Single pass aggregation pipeline grouping applications by status.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Object>} Predictable application statistics object
    */
-  async getApplicationMetrics(userId) {
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+  async getApplicationStats(userId) {
+    const userObjectId = this.toObjectId(userId);
 
-    const applications = await Application.find({ user: userObjectId })
-      .populate('job', 'title location workMode company')
-      .populate('company', 'name logo')
-      .sort({ appliedAt: -1, createdAt: -1 })
-      .lean();
+    const [stats] = await Application.aggregate([
+      { $match: { user: userObjectId } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          applied: { $sum: { $cond: [{ $eq: ['$status', 'Applied'] }, 1, 0] } },
+          underReview: { $sum: { $cond: [{ $eq: ['$status', 'Under Review'] }, 1, 0] } },
+          interview: {
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    '$status',
+                    ['Interview Scheduled', 'Technical Round', 'HR Round'],
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          offered: { $sum: { $cond: [{ $eq: ['$status', 'Offered'] }, 1, 0] } },
+          rejected: { $sum: { $cond: [{ $eq: ['$status', 'Rejected'] }, 1, 0] } },
+          withdrawn: { $sum: { $cond: [{ $eq: ['$status', 'Withdrawn'] }, 1, 0] } },
+        },
+      },
+    ]);
 
-    const total = applications.length;
+    if (!stats || stats.total === 0) {
+      return {
+        total: 0,
+        applied: 0,
+        underReview: 0,
+        interview: 0,
+        offered: 0,
+        rejected: 0,
+        withdrawn: 0,
+        interviewConversionRate: 0,
+        offerConversionRate: 0,
+      };
+    }
 
-    const counts = {
-      applied: 0,
-      underReview: 0,
-      interview: 0,
-      offered: 0,
-      rejected: 0,
-      withdrawn: 0,
-    };
-
-    applications.forEach((app) => {
-      switch (app.status) {
-        case 'Applied':
-          counts.applied += 1;
-          break;
-        case 'Under Review':
-          counts.underReview += 1;
-          break;
-        case 'Interview Scheduled':
-        case 'Technical Round':
-        case 'HR Round':
-          counts.interview += 1;
-          break;
-        case 'Offered':
-          counts.offered += 1;
-          break;
-        case 'Rejected':
-          counts.rejected += 1;
-          break;
-        case 'Withdrawn':
-          counts.withdrawn += 1;
-          break;
-        default:
-          counts.applied += 1;
-      }
-    });
-
-    const interviewConversionRate =
-      total > 0
-        ? parseFloat((((counts.interview + counts.offered) / total) * 100).toFixed(1))
-        : 0;
-
-    const offerConversionRate =
-      total > 0
-        ? parseFloat(((counts.offered / total) * 100).toFixed(1))
-        : 0;
+    const total = stats.total;
+    const interviewConversionRate = parseFloat(
+      (((stats.interview + stats.offered) / total) * 100).toFixed(1)
+    );
+    const offerConversionRate = parseFloat(
+      ((stats.offered / total) * 100).toFixed(1)
+    );
 
     return {
       total,
-      ...counts,
+      applied: stats.applied,
+      underReview: stats.underReview,
+      interview: stats.interview,
+      offered: stats.offered,
+      rejected: stats.rejected,
+      withdrawn: stats.withdrawn,
       interviewConversionRate,
       offerConversionRate,
-      recentApplications: applications.slice(0, 5),
     };
   }
 
   /**
-   * Fetch candidate saved jobs count & metrics
-   * @param {string} userId
-   * @returns {Promise<Object>}
+   * 5. Retrieve saved jobs total count.
+   * Uses fast indexed countDocuments query.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Object>} { total: number }
    */
-  async getSavedJobMetrics(userId) {
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+  async getSavedJobStats(userId) {
+    const userObjectId = this.toObjectId(userId);
     const total = await SavedJob.countDocuments({ user: userObjectId });
     return { total };
   }
 
   /**
-   * Fetch aggregated recent activities sorted by timestamp
-   * @param {string} userId
-   * @param {Object} options - { limit: number, page: number, type: string }
-   * @returns {Promise<Object>}
+   * 6. Consolidate recent user activity feed across domain models with pagination and projection.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @param {Object} [options={}] - { limit: 10, page: 1, type: null }
+   * @returns {Promise<Object>} Activity feed structure with pagination
    */
-  async getRecentActivities(userId, options = {}) {
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-    const { limit = 10, page = 1, type = null } = options;
+  async getRecentActivity(userId, options = {}) {
+    const userObjectId = this.toObjectId(userId);
+    const limit = Math.max(1, parseInt(options.limit || 10, 10));
+    const page = Math.max(1, parseInt(options.page || 1, 10));
+    const type = options.type || null;
 
     const [resumes, analyses, interviews, applications, savedJobs] = await Promise.all([
-      Resume.find({ user: userObjectId }).sort({ createdAt: -1 }).limit(10).lean(),
-      ResumeAnalysis.find({ user: userObjectId }).sort({ createdAt: -1 }).limit(10).lean(),
-      Interview.find({ user: userObjectId }).sort({ createdAt: -1 }).limit(10).lean(),
-      Application.find({ user: userObjectId })
-        .populate('job', 'title')
-        .populate('company', 'name')
+      Resume.find({ user: userObjectId }, { _id: 1, originalName: 1, uploadedAt: 1, createdAt: 1 })
         .sort({ createdAt: -1 })
         .limit(10)
         .lean(),
-      SavedJob.find({ user: userObjectId })
+
+      ResumeAnalysis.find(
+        { user: userObjectId },
+        { _id: 1, atsScore: 1, analyzedAt: 1, createdAt: 1 }
+      )
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+
+      Interview.find(
+        { user: userObjectId },
+        { _id: 1, role: 1, interviewType: 1, status: 1, completedAt: 1, startedAt: 1, createdAt: 1 }
+      )
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+
+      Application.find(
+        { user: userObjectId },
+        { _id: 1, job: 1, company: 1, status: 1, appliedAt: 1, createdAt: 1 }
+      )
+        .populate('job', 'title')
+        .populate('company', 'companyName name')
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .lean(),
+
+      SavedJob.find({ user: userObjectId }, { _id: 1, job: 1, savedAt: 1, createdAt: 1 })
         .populate('job', 'title')
         .sort({ savedAt: -1, createdAt: -1 })
         .limit(10)
@@ -315,18 +437,13 @@ class DashboardRepository {
 
     applications.forEach((app) => {
       const jobTitle = app.job?.title || 'Job Posting';
-      const companyName = app.company?.name || '';
+      const companyName = app.company?.companyName || app.company?.name || '';
       activities.push({
         id: app._id,
         activityType: 'APPLICATION_SUBMITTED',
-        title: `Applied for ${jobTitle} ${companyName ? `at ${companyName}` : ''}`.trim(),
+        title: `Applied for ${jobTitle}${companyName ? ` at ${companyName}` : ''}`,
         date: app.appliedAt || app.createdAt,
-        metadata: {
-          applicationId: app._id,
-          jobTitle,
-          companyName,
-          status: app.status,
-        },
+        metadata: { applicationId: app._id, jobTitle, companyName, status: app.status },
       });
     });
 
@@ -341,35 +458,197 @@ class DashboardRepository {
       });
     });
 
-    // Sort combined activities descending by timestamp
-    let filteredActivities = activities.sort(
+    let sorted = activities.sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
 
-    // Apply type filter if provided
     if (type) {
-      filteredActivities = filteredActivities.filter(
+      sorted = sorted.filter(
         (act) => act.activityType.toUpperCase() === type.toUpperCase()
       );
     }
 
-    const totalItems = filteredActivities.length;
+    const totalItems = sorted.length;
     const totalPages = Math.ceil(totalItems / limit) || 1;
     const startIndex = (page - 1) * limit;
-    const paginatedActivities = filteredActivities.slice(startIndex, startIndex + limit);
+    const paginatedActivities = sorted.slice(startIndex, startIndex + limit);
 
     return {
       activities: paginatedActivities,
       pagination: {
         totalItems,
-        page: Number(page),
-        limit: Number(limit),
+        page,
+        limit,
         totalPages,
         hasNextPage: page < totalPages,
         hasPrevPage: page > 1,
       },
     };
   }
+
+  /**
+   * 7. Retrieve chronological ATS score history for candidate progress tracking.
+   * Aggregation pipeline sorting analysis records chronologically with projection.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Array<Object>>} List of ATS score history items
+   */
+  async getATSScoreHistory(userId) {
+    const userObjectId = this.toObjectId(userId);
+
+    return await ResumeAnalysis.aggregate([
+      { $match: { user: userObjectId } },
+      { $sort: { createdAt: 1 } },
+      {
+        $project: {
+          _id: 0,
+          analysisId: '$_id',
+          atsScore: 1,
+          aiProvider: { $ifNull: ['$aiProvider', 'Gemini'] },
+          aiModel: { $ifNull: ['$aiModel', 'gemini-1.5-pro'] },
+          date: { $ifNull: ['$analyzedAt', '$createdAt'] },
+        },
+      },
+    ]);
+  }
+
+  /**
+   * 8. Retrieve chronological score history for completed mock interviews.
+   * Aggregation pipeline joining completed interviews with InterviewResult documents.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Array<Object>>} List of interview score history records
+   */
+  async getInterviewScoreHistory(userId) {
+    const userObjectId = this.toObjectId(userId);
+
+    return await Interview.aggregate([
+      { $match: { user: userObjectId, status: 'Completed' } },
+      { $sort: { completedAt: 1, createdAt: 1 } },
+      {
+        $lookup: {
+          from: 'interviewresults',
+          localField: '_id',
+          foreignField: 'interview',
+          as: 'result',
+        },
+      },
+      { $unwind: '$result' },
+      {
+        $project: {
+          _id: 0,
+          interviewId: '$_id',
+          role: 1,
+          interviewType: 1,
+          difficulty: 1,
+          overallScore: '$result.overallScore',
+          technicalScore: '$result.technicalScore',
+          communicationScore: '$result.communicationScore',
+          hrScore: '$result.hrScore',
+          date: { $ifNull: ['$completedAt', '$createdAt'] },
+        },
+      },
+    ]);
+  }
+
+  /**
+   * 9. Compute application status breakdown statistics & conversion funnel.
+   * Aggregation pipeline grouping application status counts and computing percentages.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Object>} Application status funnel statistics
+   */
+  async getApplicationStatusStats(userId) {
+    const userObjectId = this.toObjectId(userId);
+
+    const [funnel] = await Application.aggregate([
+      { $match: { user: userObjectId } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          applied: { $sum: { $cond: [{ $eq: ['$status', 'Applied'] }, 1, 0] } },
+          underReview: { $sum: { $cond: [{ $eq: ['$status', 'Under Review'] }, 1, 0] } },
+          interview: {
+            $sum: {
+              $cond: [
+                {
+                  $in: [
+                    '$status',
+                    ['Interview Scheduled', 'Technical Round', 'HR Round'],
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+          offered: { $sum: { $cond: [{ $eq: ['$status', 'Offered'] }, 1, 0] } },
+          rejected: { $sum: { $cond: [{ $eq: ['$status', 'Rejected'] }, 1, 0] } },
+          withdrawn: { $sum: { $cond: [{ $eq: ['$status', 'Withdrawn'] }, 1, 0] } },
+        },
+      },
+    ]);
+
+    if (!funnel || funnel.total === 0) {
+      return {
+        total: 0,
+        statusBreakdown: {
+          applied: 0,
+          underReview: 0,
+          interview: 0,
+          offered: 0,
+          rejected: 0,
+          withdrawn: 0,
+        },
+        funnelStages: [
+          { stage: 'Applied', count: 0, percentage: 0 },
+          { stage: 'Under Review', count: 0, percentage: 0 },
+          { stage: 'Interview', count: 0, percentage: 0 },
+          { stage: 'Offered', count: 0, percentage: 0 },
+        ],
+        conversionRates: {
+          interviewConversionRate: 0,
+          offerConversionRate: 0,
+        },
+      };
+    }
+
+    const total = funnel.total;
+    const interviewConversionRate = parseFloat(
+      (((funnel.interview + funnel.offered) / total) * 100).toFixed(1)
+    );
+    const offerConversionRate = parseFloat(
+      ((funnel.offered / total) * 100).toFixed(1)
+    );
+
+    return {
+      total,
+      statusBreakdown: {
+        applied: funnel.applied,
+        underReview: funnel.underReview,
+        interview: funnel.interview,
+        offered: funnel.offered,
+        rejected: funnel.rejected,
+        withdrawn: funnel.withdrawn,
+      },
+      funnelStages: [
+        { stage: 'Applied', count: total, percentage: 100 },
+        {
+          stage: 'Under Review',
+          count: funnel.underReview,
+          percentage: parseFloat(((funnel.underReview / total) * 100).toFixed(1)),
+        },
+        { stage: 'Interview', count: funnel.interview + funnel.offered, percentage: interviewConversionRate },
+        { stage: 'Offered', count: funnel.offered, percentage: offerConversionRate },
+      ],
+      conversionRates: {
+        interviewConversionRate,
+        offerConversionRate,
+      },
+    };
+  }
 }
 
 export default new DashboardRepository();
+export { DashboardRepository };

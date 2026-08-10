@@ -83,10 +83,21 @@ async function runDashboardTests() {
       '8. Career readiness recommendations array generated'
     );
 
-    // 4. Express App Router Mounting Test
+    // 4. Repository Methods Verification (Zero-record handling)
+    assert(typeof dashboardRepository.getProfileStats === 'function', '9. getProfileStats method exists');
+    assert(typeof dashboardRepository.getResumeStats === 'function', '10. getResumeStats method exists');
+    assert(typeof dashboardRepository.getInterviewStats === 'function', '11. getInterviewStats method exists');
+    assert(typeof dashboardRepository.getApplicationStats === 'function', '12. getApplicationStats method exists');
+    assert(typeof dashboardRepository.getSavedJobStats === 'function', '13. getSavedJobStats method exists');
+    assert(typeof dashboardRepository.getRecentActivity === 'function', '14. getRecentActivity method exists');
+    assert(typeof dashboardRepository.getATSScoreHistory === 'function', '15. getATSScoreHistory method exists');
+    assert(typeof dashboardRepository.getInterviewScoreHistory === 'function', '16. getInterviewScoreHistory method exists');
+    assert(typeof dashboardRepository.getApplicationStatusStats === 'function', '17. getApplicationStatusStats method exists');
+
+    // 5. Express App Router Mounting Test
     const routesStack = app._router.stack;
     const mainRouterLayer = routesStack.find((layer) => layer.name === 'router');
-    assert(!!mainRouterLayer, '9. Dashboard routes mounted in Express router pipeline');
+    assert(!!mainRouterLayer, '18. Dashboard routes mounted in Express router pipeline');
   } catch (err) {
     assert(false, 'Dashboard module verification exception', err.message);
   }
