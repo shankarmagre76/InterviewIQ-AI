@@ -1,0 +1,245 @@
+{
+  "info": {
+    "_postman_id": "7f8a9b2c-3d4e-5f6a-7b8c-9d0e1f2a3b4c",
+    "name": "InterviewIQ AI - AI Mock Interview Module",
+    "description": "Production-ready Postman Collection for testing Phase 7 AI Mock Interview REST APIs.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "YOUR_JWT_ACCESS_TOKEN",
+      "type": "string"
+    },
+    {
+      "key": "interviewId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "questionId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01. Session Management",
+      "item": [
+        {
+          "name": "Start Interview Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"Full Stack Engineer\",\n  \"interviewType\": \"Technical\",\n  \"difficulty\": \"Intermediate\",\n  \"totalQuestions\": 5,\n  \"estimatedDuration\": 30,\n  \"mode\": \"Text\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/start",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "start"]
+            }
+          }
+        },
+        {
+          "name": "Get Interview History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "10" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Full Interview Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/{{interviewId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "{{interviewId}}"]
+            }
+          }
+        },
+        {
+          "name": "Resume Interrupted Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/{{interviewId}}/resume",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "{{interviewId}}", "resume"]
+            }
+          }
+        },
+        {
+          "name": "Conclude Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Completed\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/{{interviewId}}/end",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "{{interviewId}}", "end"]
+            }
+          }
+        },
+        {
+          "name": "Cancel / Delete Session",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/{{interviewId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "{{interviewId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02. Questions",
+      "item": [
+        {
+          "name": "Get Session Questions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/{{interviewId}}/questions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "{{interviewId}}", "questions"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03. Answers & AI Evaluation",
+      "item": [
+        {
+          "name": "Submit Answer for Evaluation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"questionId\": \"{{questionId}}\",\n  \"answer\": \"I design microservices by decoupling domains, using event-driven communication via RabbitMQ, implementing Redis caching, and indexing MongoDB queries.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/{{interviewId}}/answers",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "{{interviewId}}", "answers"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04. Results & Reports",
+      "item": [
+        {
+          "name": "Get Evaluation Result Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/interviews/{{interviewId}}/result",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "interviews", "{{interviewId}}", "result"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
