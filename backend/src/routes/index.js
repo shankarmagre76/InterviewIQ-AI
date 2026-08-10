@@ -9,6 +9,8 @@ import applicationRoutes from '../application/application.routes.js';
 import savedJobRoutes from '../savedJob/savedJob.routes.js';
 import interviewRoutes from '../interview/interview.routes.js';
 import dashboardRoutes from '../dashboard/dashboard.routes.js';
+import learningRoadmapRoutes from '../learningRoadmap/learningRoadmap.routes.js';
+import notificationRoutes from '../notification/notification.routes.js';
 import { getRoot, getApiIndex } from '../controllers/health.controller.js';
 
 const router = Router();
@@ -59,5 +61,13 @@ router.use('/api/interviews', interviewRoutes);
 // Mount Dashboard sub-routes
 router.use('/api/v1/dashboard', dashboardRoutes);
 router.use('/api/dashboard', dashboardRoutes);
+
+// Mount Learning Roadmap sub-routes
+router.use('/api/v1/roadmaps', learningRoadmapRoutes);
+router.use('/api/roadmaps', learningRoadmapRoutes);
+
+// Mount Notification sub-routes
+router.use('/api/v1/notifications', notificationRoutes);
+router.use('/api/notifications', notificationRoutes);
 
 export default router;
