@@ -104,3 +104,7 @@ export const getActivityStream = asyncHandler(async (req, res) => {
 
   return new ApiResponse(200, data, 'Recent activity stream retrieved successfully').send(res);
 });
+
+// Method aliases for interface compliance
+export const getDashboard = getMainDashboard;
+export const getActivityDashboard = getActivityStream;

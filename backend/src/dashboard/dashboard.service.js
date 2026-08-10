@@ -2,61 +2,52 @@ import dashboardRepository from './dashboard.repository.js';
 
 /**
  * Dashboard Service Layer
- * Executes business logic, calculates profile completion percentages, career readiness scores,
- * ATS metrics, application funnel conversions, dynamic recommendations, and response structures.
+ * Orchestrates metrics calculation, data aggregation across domain repositories,
+ * normalization of zero/empty candidate data, and career readiness scoring.
+ *
+ * Contains ZERO direct database queries. Relies exclusively on DashboardRepository.
  */
 class DashboardService {
   /**
-   * Calculate candidate Profile Completion Percentage
-   * @param {Object|null} profile
-   * @returns {number} percentage between 0 and 100
+   * Calculate candidate Profile Completion Percentage (0 - 100%)
+   * @param {Object|null} profileStats
+   * @returns {number} Integer completion percentage
    */
-  calculateProfileCompletion(profile) {
-    if (!profile) return 0;
+  calculateProfileCompletion(profileStats) {
+    if (!profileStats || !profileStats.hasProfile) return 0;
 
     let score = 0;
 
     // Headline (15%)
-    if (profile.headline && profile.headline.trim().length > 0) score += 15;
+    if (profileStats.headline && profileStats.headline.trim().length > 0) score += 15;
 
     // Bio (15%)
-    if (profile.bio && profile.bio.trim().length > 0) score += 15;
+    if (profileStats.bio && profileStats.bio.trim().length > 0) score += 15;
 
     // Skills (20%)
-    if (Array.isArray(profile.skills) && profile.skills.length > 0) score += 20;
+    if (profileStats.skillsCount && profileStats.skillsCount > 0) score += 20;
 
     // Education (15%)
-    if (Array.isArray(profile.education) && profile.education.length > 0) score += 15;
+    if (profileStats.educationCount && profileStats.educationCount > 0) score += 15;
 
     // Experience (15%)
-    if (Array.isArray(profile.experience) && profile.experience.length > 0) score += 15;
+    if (profileStats.experienceCount && profileStats.experienceCount > 0) score += 15;
 
     // Social Links (10%)
-    const social = profile.socialLinks || {};
-    if (
-      social.github ||
-      social.linkedin ||
-      social.portfolio ||
-      social.leetcode ||
-      social.hackerrank ||
-      social.codechef
-    ) {
-      score += 10;
-    }
+    if (profileStats.hasSocialLinks) score += 10;
 
-    // Basic Details / Contact Info (10%)
-    if (
-      (profile.firstName || profile.lastName) &&
-      (profile.phone || profile.currentLocation || profile.dateOfBirth)
-    ) {
-      score += 10;
-    }
+    // Basic Info / Contact Info (10%)
+    if (profileStats.hasBasicInfo) score += 10;
 
     return Math.min(100, score);
   }
 
   /**
-   * Compute Career Readiness Composite Score and dynamic recommendations
+   * Compute Career Readiness Composite Evaluation Score and dynamic recommendations.
+   *
+   * Formula:
+   * overallScore = (resumeScore * 0.35) + (interviewScore * 0.35) + (profileScore * 0.15) + (applicationScore * 0.15)
+   *
    * @param {number} profileScore
    * @param {Object} resumeMetrics
    * @param {Object} interviewMetrics
@@ -69,22 +60,21 @@ class DashboardService {
     interviewMetrics,
     applicationMetrics
   ) {
-    const resumeScore = resumeMetrics.latestAnalysis?.atsScore || 0;
-    const interviewScore = interviewMetrics.averageScore || 0;
+    const resumeScore = resumeMetrics?.latestATSScore || 0;
+    const interviewScore = interviewMetrics?.averageScore || 0;
 
     let applicationScore = 40;
-    if (applicationMetrics.total > 0) {
+    if (applicationMetrics && applicationMetrics.total > 0) {
       applicationScore = Math.min(
         100,
         Math.round(
           50 +
-            applicationMetrics.interviewConversionRate * 0.3 +
-            applicationMetrics.offerConversionRate * 0.5
+            (applicationMetrics.interviewConversionRate || 0) * 0.3 +
+            (applicationMetrics.offerConversionRate || 0) * 0.5
         )
       );
     }
 
-    // Formula: (Resume * 35%) + (Interview * 35%) + (Profile * 15%) + (Application * 15%)
     const overallScore = Math.round(
       resumeScore * 0.35 +
         interviewScore * 0.35 +
@@ -99,7 +89,7 @@ class DashboardService {
 
     const recommendations = [];
 
-    if (!resumeMetrics.hasResume) {
+    if (!resumeMetrics || !resumeMetrics.hasResume) {
       recommendations.push(
         'Upload your resume to receive AI ATS feedback and boost your career readiness score.'
       );
@@ -109,7 +99,7 @@ class DashboardService {
       );
     }
 
-    if (interviewMetrics.completed === 0) {
+    if (!interviewMetrics || interviewMetrics.completed === 0) {
       recommendations.push(
         'Complete your first AI Mock Interview session to establish your technical interview score.'
       );
@@ -121,13 +111,13 @@ class DashboardService {
 
     if (profileScore < 100) {
       recommendations.push(
-        'Fill out missing skills, education, or social links to bring profile completion to 100%.'
+        'Fill out missing skills, education, or social links to bring candidate profile completion to 100%.'
       );
     }
 
-    if (applicationMetrics.total === 0) {
+    if (!applicationMetrics || applicationMetrics.total === 0) {
       recommendations.push(
-        'Apply to open job postings to track application response rates and funnel performance.'
+        'Apply to active job postings to track application response rates and funnel performance.'
       );
     }
 
@@ -155,36 +145,33 @@ class DashboardService {
   }
 
   /**
-   * Get Main Dashboard Overview
+   * Get Main Dashboard Summary Overview
+   * Combines profile, resume, interview, application, saved jobs, career readiness, and recent activity.
+   * Handles users with zero records gracefully.
+   *
    * @param {string} userId
-   * @returns {Promise<Object>}
+   * @returns {Promise<Object>} Main dashboard response structure
    */
-  async getMainDashboard(userId) {
+  async getDashboard(userId) {
     const [
-      profileData,
+      profileStats,
       resumeMetrics,
       interviewMetrics,
       applicationMetrics,
       savedJobMetrics,
       recentActivitiesData,
     ] = await Promise.all([
-      dashboardRepository.getProfileData(userId),
-      dashboardRepository.getResumeMetrics(userId),
-      dashboardRepository.getInterviewMetrics(userId),
-      dashboardRepository.getApplicationMetrics(userId),
-      dashboardRepository.getSavedJobMetrics(userId),
-      dashboardRepository.getRecentActivities(userId, { limit: 5 }),
+      dashboardRepository.getProfileStats(userId),
+      dashboardRepository.getResumeStats(userId),
+      dashboardRepository.getInterviewStats(userId),
+      dashboardRepository.getApplicationStats(userId),
+      dashboardRepository.getSavedJobStats(userId),
+      dashboardRepository.getRecentActivity(userId, { limit: 5 }),
     ]);
 
-    const completionPercentage = this.calculateProfileCompletion(profileData);
-    const targetRole = profileData?.headline || 'Candidate';
-    const skillsCount = Array.isArray(profileData?.skills)
-      ? profileData.skills.length
-      : 0;
-
-    const latestATSScore = resumeMetrics.latestAnalysis?.atsScore || 0;
-    const previousATSScore = resumeMetrics.previousAnalysis?.atsScore || 0;
-    const scoreImprovement = latestATSScore - previousATSScore;
+    const completionPercentage = this.calculateProfileCompletion(profileStats);
+    const targetRole = profileStats?.headline || 'Candidate';
+    const skillsCount = profileStats?.skillsCount || 0;
 
     const careerReadiness = this.calculateCareerReadiness(
       completionPercentage,
@@ -200,32 +187,32 @@ class DashboardService {
         skillsCount,
       },
       resume: {
-        hasResume: resumeMetrics.hasResume,
-        latestATSScore,
-        previousATSScore,
-        scoreImprovement,
-        analysisCount: resumeMetrics.analysisCount,
+        hasResume: resumeMetrics?.hasResume || false,
+        latestATSScore: resumeMetrics?.latestATSScore || 0,
+        previousATSScore: resumeMetrics?.previousATSScore || 0,
+        scoreImprovement: resumeMetrics?.scoreImprovement || 0,
+        analysisCount: resumeMetrics?.analysisCount || 0,
       },
       interviews: {
-        total: interviewMetrics.total,
-        completed: interviewMetrics.completed,
-        averageScore: interviewMetrics.averageScore,
-        bestScore: interviewMetrics.bestScore,
-        latestScore: interviewMetrics.latestScore,
+        total: interviewMetrics?.total || 0,
+        completed: interviewMetrics?.completed || 0,
+        averageScore: interviewMetrics?.averageScore || 0,
+        bestScore: interviewMetrics?.bestScore || 0,
+        latestScore: interviewMetrics?.latestScore || 0,
       },
       applications: {
-        total: applicationMetrics.total,
-        applied: applicationMetrics.applied,
-        underReview: applicationMetrics.underReview,
-        interview: applicationMetrics.interview,
-        offered: applicationMetrics.offered,
-        rejected: applicationMetrics.rejected,
-        withdrawn: applicationMetrics.withdrawn,
-        interviewConversionRate: applicationMetrics.interviewConversionRate,
-        offerConversionRate: applicationMetrics.offerConversionRate,
+        total: applicationMetrics?.total || 0,
+        applied: applicationMetrics?.applied || 0,
+        underReview: applicationMetrics?.underReview || 0,
+        interview: applicationMetrics?.interview || 0,
+        offered: applicationMetrics?.offered || 0,
+        rejected: applicationMetrics?.rejected || 0,
+        withdrawn: applicationMetrics?.withdrawn || 0,
+        interviewConversionRate: applicationMetrics?.interviewConversionRate || 0,
+        offerConversionRate: applicationMetrics?.offerConversionRate || 0,
       },
       savedJobs: {
-        total: savedJobMetrics.total,
+        total: savedJobMetrics?.total || 0,
       },
       careerReadiness: {
         overallScore: careerReadiness.overallScore,
@@ -235,22 +222,31 @@ class DashboardService {
         applicationScore: careerReadiness.scoreBreakdown.applicationScore,
         recommendations: careerReadiness.recommendations,
       },
-      recentActivity: recentActivitiesData.activities,
+      recentActivity: recentActivitiesData?.activities || [],
     };
   }
 
   /**
-   * Get Resume Sub-Dashboard Data
+   * Alias method for getDashboard to support existing calls
    * @param {string} userId
    * @returns {Promise<Object>}
    */
-  async getResumeDashboard(userId) {
-    const resumeMetrics = await dashboardRepository.getResumeMetrics(userId);
-    const latestAnalysis = resumeMetrics.latestAnalysis;
+  async getMainDashboard(userId) {
+    return await this.getDashboard(userId);
+  }
 
-    const latestATSScore = latestAnalysis?.atsScore || 0;
-    const previousATSScore = resumeMetrics.previousAnalysis?.atsScore || 0;
-    const scoreImprovement = latestATSScore - previousATSScore;
+  /**
+   * Get Detailed Resume Sub-Dashboard Data
+   * @param {string} userId
+   * @returns {Promise<Object>} Resume sub-dashboard payload
+   */
+  async getResumeDashboard(userId) {
+    const [resumeMetrics, scoreHistory] = await Promise.all([
+      dashboardRepository.getResumeStats(userId),
+      dashboardRepository.getATSScoreHistory(userId),
+    ]);
+
+    const latestAnalysis = resumeMetrics.latestAnalysis;
 
     return {
       hasResume: resumeMetrics.hasResume,
@@ -263,12 +259,12 @@ class DashboardService {
           }
         : null,
       atsMetrics: {
-        latestATSScore,
-        previousATSScore,
-        scoreImprovement,
+        latestATSScore: resumeMetrics.latestATSScore,
+        previousATSScore: resumeMetrics.previousATSScore,
+        scoreImprovement: resumeMetrics.scoreImprovement,
         analysisCount: resumeMetrics.analysisCount,
       },
-      scoreHistory: resumeMetrics.scoreHistory,
+      scoreHistory: scoreHistory || [],
       latestAnalysisBreakdown: latestAnalysis
         ? {
             summary: latestAnalysis.summary || '',
@@ -289,69 +285,92 @@ class DashboardService {
   }
 
   /**
-   * Get Interviews Sub-Dashboard Data
+   * Get Detailed Interviews Sub-Dashboard Data
    * @param {string} userId
-   * @returns {Promise<Object>}
+   * @returns {Promise<Object>} Interview sub-dashboard payload
    */
   async getInterviewDashboard(userId) {
-    const metrics = await dashboardRepository.getInterviewMetrics(userId);
+    const [metrics, scoreHistory] = await Promise.all([
+      dashboardRepository.getInterviewStats(userId),
+      dashboardRepository.getInterviewScoreHistory(userId),
+    ]);
+
     return {
       summary: {
         total: metrics.total,
         completed: metrics.completed,
         inProgress: metrics.inProgress,
         pending: metrics.pending,
+        cancelled: metrics.cancelled,
         averageScore: metrics.averageScore,
         bestScore: metrics.bestScore,
         latestScore: metrics.latestScore,
       },
       scoreDistribution: metrics.scoreDistribution,
-      byType: metrics.byType,
-      recentInterviews: metrics.recentInterviews,
+      scoreHistory: scoreHistory || [],
+      recentInterviews: metrics.recentInterviews || [],
     };
   }
 
   /**
-   * Get Applications Sub-Dashboard Data
+   * Get Detailed Applications Sub-Dashboard Data
    * @param {string} userId
-   * @returns {Promise<Object>}
+   * @returns {Promise<Object>} Application sub-dashboard payload
    */
   async getApplicationDashboard(userId) {
-    const metrics = await dashboardRepository.getApplicationMetrics(userId);
-    const { total, recentApplications, ...summary } = metrics;
-
-    const statusFunnel = [
-      { stage: 'Applied', count: summary.applied, percentage: 100 },
-      { stage: 'Under Review', count: summary.underReview, percentage: total > 0 ? parseFloat(((summary.underReview / total) * 100).toFixed(1)) : 0 },
-      { stage: 'Interview', count: summary.interview, percentage: summary.interviewConversionRate },
-      { stage: 'Offered', count: summary.offered, percentage: summary.offerConversionRate },
-    ];
+    const [statusStats, applicationMetrics] = await Promise.all([
+      dashboardRepository.getApplicationStatusStats(userId),
+      dashboardRepository.getApplicationStats(userId),
+    ]);
 
     return {
       summary: {
-        total,
-        ...summary,
+        total: statusStats.total,
+        ...statusStats.statusBreakdown,
+        interviewConversionRate: statusStats.conversionRates.interviewConversionRate,
+        offerConversionRate: statusStats.conversionRates.offerConversionRate,
       },
-      statusFunnel,
-      recentApplications,
+      statusFunnel: statusStats.funnelStages,
+      conversionRates: statusStats.conversionRates,
+      recentApplications: applicationMetrics.recentApplications || [],
     };
   }
 
   /**
-   * Get Career Readiness Sub-Dashboard Data
+   * Get Paginated Recent Candidate Activity Sub-Dashboard Data
    * @param {string} userId
+   * @param {Object} [options={}] - { limit: 10, page: 1, type: null }
+   * @returns {Promise<Object>} Activity feed payload
+   */
+  async getActivityDashboard(userId, options = {}) {
+    return await dashboardRepository.getRecentActivity(userId, options);
+  }
+
+  /**
+   * Alias method for getActivityDashboard to support router controller calls
+   * @param {string} userId
+   * @param {Object} options
    * @returns {Promise<Object>}
    */
+  async getActivityStream(userId, options) {
+    return await this.getActivityDashboard(userId, options);
+  }
+
+  /**
+   * Get Standalone Career Readiness Sub-Dashboard Data
+   * @param {string} userId
+   * @returns {Promise<Object>} Career readiness payload
+   */
   async getCareerReadinessDashboard(userId) {
-    const [profileData, resumeMetrics, interviewMetrics, applicationMetrics] =
+    const [profileStats, resumeMetrics, interviewMetrics, applicationMetrics] =
       await Promise.all([
-        dashboardRepository.getProfileData(userId),
-        dashboardRepository.getResumeMetrics(userId),
-        dashboardRepository.getInterviewMetrics(userId),
-        dashboardRepository.getApplicationMetrics(userId),
+        dashboardRepository.getProfileStats(userId),
+        dashboardRepository.getResumeStats(userId),
+        dashboardRepository.getInterviewStats(userId),
+        dashboardRepository.getApplicationStats(userId),
       ]);
 
-    const profileScore = this.calculateProfileCompletion(profileData);
+    const profileScore = this.calculateProfileCompletion(profileStats);
     return this.calculateCareerReadiness(
       profileScore,
       resumeMetrics,
@@ -359,16 +378,7 @@ class DashboardService {
       applicationMetrics
     );
   }
-
-  /**
-   * Get Recent Activity Stream Sub-Endpoint
-   * @param {string} userId
-   * @param {Object} options
-   * @returns {Promise<Object>}
-   */
-  async getActivityStream(userId, options) {
-    return await dashboardRepository.getRecentActivities(userId, options);
-  }
 }
 
 export default new DashboardService();
+export { DashboardService };
