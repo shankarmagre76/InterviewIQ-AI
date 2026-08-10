@@ -237,41 +237,80 @@ class DashboardService {
 
   /**
    * Get Detailed Resume Sub-Dashboard Data
+  /**
+   * Calculate Phase 8.4 Resume Analytics metrics.
+   * Returns currentScore, previousScore, improvement, highestScore, lowestScore, analysisCount,
+   * latestAnalysisDate, scoreHistory (time-series), missingSkills, recommendedSkills, hasResume, resumeStatus.
+   *
    * @param {string} userId
-   * @returns {Promise<Object>} Resume sub-dashboard payload
+   * @returns {Promise<Object>} Time-series analytics payload for frontend charts
    */
-  async getResumeDashboard(userId) {
-    const [resumeMetrics, scoreHistory] = await Promise.all([
-      dashboardRepository.getResumeStats(userId),
-      dashboardRepository.getATSScoreHistory(userId),
-    ]);
+  async getResumeAnalytics(userId) {
+    const rawData = await dashboardRepository.getResumeAnalyticsData(userId);
 
-    const latestAnalysis = resumeMetrics.latestAnalysis;
+    const activeResume = rawData.activeResume;
+    const statsGroup = rawData.aggregateResult.stats?.[0] || {
+      count: 0,
+      highestScore: 0,
+      lowestScore: 0,
+    };
+
+    const latestTwo = rawData.aggregateResult.latestTwo || [];
+    const latestAnalysis = latestTwo[0] || null;
+    const previousAnalysis = latestTwo[1] || null;
+
+    const currentScore = latestAnalysis ? latestAnalysis.atsScore : 0;
+    const previousScore = previousAnalysis ? previousAnalysis.atsScore : 0;
+    const improvement = latestAnalysis ? currentScore - previousScore : 0;
+    const highestScore = statsGroup.highestScore || 0;
+    const lowestScore = statsGroup.lowestScore || 0;
+    const analysisCount = statsGroup.count || 0;
+    const latestAnalysisDate = latestAnalysis
+      ? latestAnalysis.analyzedAt || latestAnalysis.createdAt
+      : null;
+
+    const scoreHistory = rawData.chronologicalHistory.map((item) => ({
+      score: item.score,
+      date: item.date,
+      analysisId: item.analysisId,
+      aiProvider: item.aiProvider,
+    }));
+
+    const missingSkills = latestAnalysis?.missingSkills || [];
+    const recommendedSkills = latestAnalysis?.recommendedSkills || [];
+    const hasResume = !!activeResume || analysisCount > 0;
+    const resumeStatus = activeResume
+      ? activeResume.isActive
+        ? 'active'
+        : 'inactive'
+      : 'none';
 
     return {
-      hasResume: resumeMetrics.hasResume,
-      currentResume: resumeMetrics.activeResume
+      currentScore,
+      previousScore,
+      improvement,
+      highestScore,
+      lowestScore,
+      analysisCount,
+      latestAnalysisDate,
+      scoreHistory,
+      missingSkills,
+      recommendedSkills,
+      hasResume,
+      resumeStatus,
+      currentResume: activeResume
         ? {
-            id: resumeMetrics.activeResume._id,
-            originalName: resumeMetrics.activeResume.originalName,
-            url: resumeMetrics.activeResume.url,
-            uploadedAt: resumeMetrics.activeResume.uploadedAt,
+            id: activeResume._id,
+            originalName: activeResume.originalName,
+            url: activeResume.url,
+            uploadedAt: activeResume.uploadedAt,
           }
         : null,
-      atsMetrics: {
-        latestATSScore: resumeMetrics.latestATSScore,
-        previousATSScore: resumeMetrics.previousATSScore,
-        scoreImprovement: resumeMetrics.scoreImprovement,
-        analysisCount: resumeMetrics.analysisCount,
-      },
-      scoreHistory: scoreHistory || [],
       latestAnalysisBreakdown: latestAnalysis
         ? {
             summary: latestAnalysis.summary || '',
             strengths: latestAnalysis.strengths || [],
             weaknesses: latestAnalysis.weaknesses || [],
-            missingSkills: latestAnalysis.missingSkills || [],
-            recommendedSkills: latestAnalysis.recommendedSkills || [],
             sectionScores: {
               summary: latestAnalysis.sectionFeedback?.summary?.score || 0,
               experience: latestAnalysis.sectionFeedback?.experience?.score || 0,
@@ -282,6 +321,15 @@ class DashboardService {
           }
         : null,
     };
+  }
+
+  /**
+   * Get Detailed Resume Sub-Dashboard Data (Alias / wrapper for getResumeAnalytics)
+   * @param {string} userId
+   * @returns {Promise<Object>} Resume sub-dashboard payload
+   */
+  async getResumeDashboard(userId) {
+    return await this.getResumeAnalytics(userId);
   }
 
   /**

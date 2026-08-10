@@ -648,6 +648,81 @@ class DashboardRepository {
       },
     };
   }
+
+  /**
+   * 10. Retrieve raw resume analytics database metrics ($max, $min, $count, score history).
+   * Executes a single aggregation pipeline with $facet to compute highest, lowest, total count,
+   * latest 2 analyses, and full chronological score history.
+   *
+   * @param {string|mongoose.Types.ObjectId} userId
+   * @returns {Promise<Object>} Raw analytics database results
+   */
+  async getResumeAnalyticsData(userId) {
+    const userObjectId = this.toObjectId(userId);
+
+    const [activeResume, aggregateResult, chronologicalHistory] = await Promise.all([
+      Resume.findOne(
+        { user: userObjectId, isActive: true },
+        { _id: 1, originalName: 1, url: 1, uploadedAt: 1, isActive: 1, parsingStatus: 1 }
+      ).lean(),
+
+      ResumeAnalysis.aggregate([
+        { $match: { user: userObjectId } },
+        { $sort: { createdAt: -1 } },
+        {
+          $facet: {
+            stats: [
+              {
+                $group: {
+                  _id: null,
+                  count: { $sum: 1 },
+                  highestScore: { $max: '$atsScore' },
+                  lowestScore: { $min: '$atsScore' },
+                },
+              },
+            ],
+            latestTwo: [
+              { $limit: 2 },
+              {
+                $project: {
+                  _id: 1,
+                  atsScore: 1,
+                  summary: 1,
+                  strengths: 1,
+                  weaknesses: 1,
+                  missingSkills: 1,
+                  recommendedSkills: 1,
+                  sectionFeedback: 1,
+                  createdAt: 1,
+                  analyzedAt: 1,
+                },
+              },
+            ],
+          },
+        },
+      ]),
+
+      ResumeAnalysis.aggregate([
+        { $match: { user: userObjectId } },
+        { $sort: { createdAt: 1 } },
+        {
+          $project: {
+            _id: 0,
+            analysisId: '$_id',
+            score: '$atsScore',
+            date: { $ifNull: ['$analyzedAt', '$createdAt'] },
+            aiProvider: { $ifNull: ['$aiProvider', 'Gemini'] },
+          },
+        },
+      ]),
+    ]);
+
+    return {
+      activeResume,
+      aggregateResult: aggregateResult[0] || {},
+      chronologicalHistory: chronologicalHistory || [],
+    };
+  }
 }
 
 export default new DashboardRepository();
