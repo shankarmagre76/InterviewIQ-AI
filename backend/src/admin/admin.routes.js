@@ -93,6 +93,19 @@ import {
   auditLogIdParamValidation,
 } from './adminAuditLog.validation.js';
 
+// Admin System Notification Announcement Controllers & Validations
+import {
+  sendAnnouncement,
+  listSentNotifications,
+  getNotificationById,
+  deleteNotification,
+} from './adminNotification.controller.js';
+import {
+  sendAnnouncementValidation,
+  adminNotificationQueryValidation,
+  notificationIdParamValidation,
+} from './adminNotification.validation.js';
+
 const router = Router();
 
 // 1. Protect all Admin routes with JWT Authentication first
@@ -135,6 +148,22 @@ router.get(
  * @access  Private (Admin Only)
  */
 router.get('/dashboard', getDashboardOverview);
+
+/* ==========================================================================
+   ADMIN SYSTEM NOTIFICATION ANNOUNCEMENT ROUTES (/api/v1/admin/notifications/*)
+   ========================================================================== */
+
+// POST /api/v1/admin/notifications - Broadcast in-app system announcement (ALL, USERS, ROLE)
+router.post('/notifications', sendAnnouncementValidation, sendAnnouncement);
+
+// GET /api/v1/admin/notifications - List sent notifications
+router.get('/notifications', adminNotificationQueryValidation, listSentNotifications);
+
+// GET /api/v1/admin/notifications/:id - View single notification
+router.get('/notifications/:id', notificationIdParamValidation, getNotificationById);
+
+// DELETE /api/v1/admin/notifications/:id - Delete single notification
+router.delete('/notifications/:id', notificationIdParamValidation, deleteNotification);
 
 /* ==========================================================================
    ADMIN ANALYTICS ROUTES (/api/v1/admin/analytics/*)

@@ -277,6 +277,7 @@ export const companyIdParamValidation = [
   param('id')
     .isMongoId()
     .withMessage('Invalid company ID format'),
+  validate,
 ];
 
 export default {

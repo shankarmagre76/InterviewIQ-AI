@@ -35,7 +35,6 @@ const adminAuditLogSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'Admin user reference is required'],
-      index: true,
     },
     action: {
       type: String,
@@ -45,7 +44,6 @@ const adminAuditLogSchema = new mongoose.Schema(
         message: '{VALUE} is not a valid audit action',
       },
       trim: true,
-      index: true,
     },
     targetType: {
       type: String,
@@ -55,7 +53,6 @@ const adminAuditLogSchema = new mongoose.Schema(
         message: '{VALUE} is not a valid target type',
       },
       trim: true,
-      index: true,
     },
     targetId: {
       type: mongoose.Schema.Types.ObjectId,
