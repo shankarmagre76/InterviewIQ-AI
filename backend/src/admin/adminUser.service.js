@@ -2,6 +2,7 @@ import adminUserRepository from './adminUser.repository.js';
 import adminAuditLogService from './adminAuditLog.service.js';
 import ApiError from '../utils/ApiError.js';
 import logger from '../utils/logger.js';
+import { createSafeRegex } from '../utils/regex.util.js';
 
 const ALLOWED_ROLES = ['Student', 'Recruiter', 'Admin'];
 
@@ -44,12 +45,14 @@ class AdminUserService {
 
     // Search query on firstName, lastName, or email
     if (search && String(search).trim()) {
-      const searchRegex = new RegExp(String(search).trim(), 'i');
-      filter.$or = [
-        { firstName: searchRegex },
-        { lastName: searchRegex },
-        { email: searchRegex },
-      ];
+      const searchRegex = createSafeRegex(String(search));
+      if (searchRegex) {
+        filter.$or = [
+          { firstName: searchRegex },
+          { lastName: searchRegex },
+          { email: searchRegex },
+        ];
+      }
     }
 
     // Filter by role

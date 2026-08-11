@@ -1,4 +1,5 @@
 import Job from './job.model.js';
+import { createSafeRegex } from '../utils/regex.util.js';
 
 /**
  * Job Repository Layer
@@ -116,30 +117,34 @@ class JobRepository {
 
     // Location search
     if (options.location) {
-      matchStage.location = new RegExp(options.location.trim(), 'i');
+      const locRegex = createSafeRegex(options.location);
+      if (locRegex) matchStage.location = locRegex;
     }
 
     // Keyword Search across title, description, location, requiredSkills, preferredSkills
     if (options.keyword || options.search) {
-      const keywordTerm = (options.keyword || options.search).trim();
-      const keywordRegex = new RegExp(keywordTerm, 'i');
-      matchStage.$or = [
-        { title: keywordRegex },
-        { description: keywordRegex },
-        { location: keywordRegex },
-        { requiredSkills: keywordRegex },
-        { preferredSkills: keywordRegex },
-      ];
+      const keywordRegex = createSafeRegex(options.keyword || options.search);
+      if (keywordRegex) {
+        matchStage.$or = [
+          { title: keywordRegex },
+          { description: keywordRegex },
+          { location: keywordRegex },
+          { requiredSkills: keywordRegex },
+          { preferredSkills: keywordRegex },
+        ];
+      }
     }
 
     // Skills Filter (Matches any skill in input list)
     if (options.skills && Array.isArray(options.skills) && options.skills.length > 0) {
-      const skillRegexes = options.skills.map((s) => new RegExp(s.trim(), 'i'));
-      matchStage.$or = [
-        ...(matchStage.$or || []),
-        { requiredSkills: { $in: skillRegexes } },
-        { preferredSkills: { $in: skillRegexes } },
-      ];
+      const skillRegexes = options.skills.map((s) => createSafeRegex(s)).filter(Boolean);
+      if (skillRegexes.length > 0) {
+        matchStage.$or = [
+          ...(matchStage.$or || []),
+          { requiredSkills: { $in: skillRegexes } },
+          { preferredSkills: { $in: skillRegexes } },
+        ];
+      }
     }
 
     // Salary Range Filtering
@@ -197,11 +202,14 @@ class JobRepository {
 
     // Optional company name search filter
     if (options.companyName) {
-      pipeline.push({
-        $match: {
-          'company.companyName': new RegExp(options.companyName.trim(), 'i'),
-        },
-      });
+      const companyRegex = createSafeRegex(options.companyName);
+      if (companyRegex) {
+        pipeline.push({
+          $match: {
+            'company.companyName': companyRegex,
+          },
+        });
+      }
     }
 
     // Join Creator User Details

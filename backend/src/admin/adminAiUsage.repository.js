@@ -2,6 +2,7 @@ import ResumeAnalysis from '../resume/resumeAnalysis.model.js';
 import Interview from '../interview/interview.model.js';
 import LearningRoadmap from '../learningRoadmap/learningRoadmap.model.js';
 import mongoose from 'mongoose';
+import { createSafeRegex } from '../utils/regex.util.js';
 
 /**
  * Admin AI Usage Repository Layer
@@ -269,7 +270,10 @@ class AdminAiUsageRepository {
       matchQuery.user = new mongoose.Types.ObjectId(filter.user);
     }
     if (filter.status) matchQuery.status = filter.status;
-    if (filter.targetRole) matchQuery.targetRole = new RegExp(filter.targetRole.trim(), 'i');
+    if (filter.targetRole) {
+      const roleRegex = createSafeRegex(filter.targetRole);
+      if (roleRegex) matchQuery.targetRole = roleRegex;
+    }
 
     const dateMatch = this.buildDateFilter(filter.dateFrom, filter.dateTo);
     Object.assign(matchQuery, dateMatch);

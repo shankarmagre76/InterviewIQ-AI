@@ -60,11 +60,11 @@ router.get('/:id/questions', interviewIdParamValidation, getQuestions);
 router.post('/:id/questions', interviewIdParamValidation, getQuestions);
 
 /**
- * @desc    POST /api/v1/interviews/:id/answer
- *          Submit audio/text answer for an interview question
+ * @desc    POST /api/v1/interviews/:id/answer (Rate limited: 10 AI operations/hour)
+ *          Submit audio/text answer for an interview question and trigger Gemini evaluation
  * @access  Private (JWT Protected)
  */
-router.post('/:id/answer', interviewIdParamValidation, submitAnswerValidation, submitAnswer);
+router.post('/:id/answer', aiRateLimiter, interviewIdParamValidation, submitAnswerValidation, submitAnswer);
 
 /**
  * @desc    POST /api/v1/interviews/:id/complete & POST /api/v1/interviews/:id/finish
