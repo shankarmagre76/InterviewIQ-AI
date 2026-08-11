@@ -10,6 +10,7 @@ import {
   deleteRoadmap,
   getTasks,
   updateTask,
+  startTask,
   completeTask,
   skipTask,
   reopenTask,
@@ -62,6 +63,9 @@ router.get('/:id/tasks', roadmapIdParamValidation, getTasks);
 
 // PATCH /api/v1/roadmaps/tasks/:taskId - Update task details
 router.patch('/tasks/:taskId', updateTaskValidation, updateTask);
+
+// PATCH /api/v1/roadmaps/tasks/:taskId/start - Mark task as IN_PROGRESS
+router.patch('/tasks/:taskId/start', taskIdParamValidation, startTask);
 
 // PATCH /api/v1/roadmaps/tasks/:taskId/complete - Mark task as COMPLETED
 router.patch('/tasks/:taskId/complete', taskIdParamValidation, completeTask);

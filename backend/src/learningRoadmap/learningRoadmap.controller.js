@@ -227,6 +227,27 @@ export const updateTask = asyncHandler(async (req, res) => {
 });
 
 /**
+ * @desc    PATCH /api/v1/roadmaps/tasks/:taskId/start
+ *          Start a Learning Task (transition status to IN_PROGRESS)
+ * @access  Private (JWT Protected)
+ */
+export const startTask = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  if (!userId) {
+    throw ApiError.unauthorized('User authentication required');
+  }
+
+  const { taskId } = req.params;
+  const result = await learningProgressService.startTask(taskId, userId);
+
+  return new ApiResponse(
+    200,
+    result,
+    'Learning task started successfully'
+  ).send(res);
+});
+
+/**
  * @desc    PATCH /api/v1/roadmaps/tasks/:taskId/complete
  *          Mark task as COMPLETED and recalculate roadmap progress
  * @access  Private (JWT Protected)

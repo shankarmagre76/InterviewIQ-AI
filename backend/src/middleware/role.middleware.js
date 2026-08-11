@@ -9,20 +9,20 @@ import ApiError from '../utils/ApiError.js';
  * @returns {import('express').RequestHandler}
  */
 const authorizeRoles = (...allowedRoles) => {
-  // Flatten array arguments if passed as authorizeRoles(['Admin', 'Recruiter'])
-  const roles = allowedRoles.flat();
+  // Flatten array arguments if passed as authorizeRoles('Admin', 'Recruiter') or authorizeRoles(['Admin', 'Recruiter'])
+  const roles = allowedRoles.flat().map((r) => String(r).toLowerCase());
 
   return (req, res, next) => {
     if (!req.user) {
       return next(ApiError.unauthorized('Authentication required to access this resource.'));
     }
 
-    const userRole = req.user.role;
+    const userRole = req.user.role ? String(req.user.role).toLowerCase() : '';
 
     if (!userRole || !roles.includes(userRole)) {
       return next(
         ApiError.forbidden(
-          `Access denied. Role '${userRole || 'Unknown'}' is not authorized to access this resource.`
+          `Access denied. Role '${req.user.role || 'Unknown'}' is not authorized to access this resource.`
         )
       );
     }
@@ -31,4 +31,10 @@ const authorizeRoles = (...allowedRoles) => {
   };
 };
 
+/**
+ * Convenient shortcut middleware specifically for Admin-only routes
+ */
+export const authorizeAdmin = authorizeRoles('Admin');
+
 export default authorizeRoles;
+

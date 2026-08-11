@@ -11,6 +11,7 @@ import interviewRoutes from '../interview/interview.routes.js';
 import dashboardRoutes from '../dashboard/dashboard.routes.js';
 import learningRoadmapRoutes from '../learningRoadmap/learningRoadmap.routes.js';
 import notificationRoutes from '../notification/notification.routes.js';
+import adminRoutes from '../admin/admin.routes.js';
 import { getRoot, getApiIndex } from '../controllers/health.controller.js';
 
 const router = Router();
@@ -70,4 +71,9 @@ router.use('/api/roadmaps', learningRoadmapRoutes);
 router.use('/api/v1/notifications', notificationRoutes);
 router.use('/api/notifications', notificationRoutes);
 
+// Mount Admin sub-routes
+router.use('/api/v1/admin', adminRoutes);
+router.use('/api/admin', adminRoutes);
+
 export default router;
+
