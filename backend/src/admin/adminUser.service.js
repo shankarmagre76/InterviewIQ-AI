@@ -1,4 +1,5 @@
 import adminUserRepository from './adminUser.repository.js';
+import adminAuditLogService from './adminAuditLog.service.js';
 import ApiError from '../utils/ApiError.js';
 import logger from '../utils/logger.js';
 
@@ -73,7 +74,7 @@ class AdminUserService {
     }
 
     // Sorting calculation
-    const allowedSortFields = ['createdAt', 'firstName', 'lastName', 'email', 'role', 'isActive'];
+    const allowedSortFields = ['createdAt', 'firstName,', 'lastName', 'email', 'role', 'isActive'];
     const actualSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
     const actualSortOrder = String(sortOrder).toLowerCase() === 'asc' || sortOrder === '1' || sortOrder === 1 ? 1 : -1;
 
@@ -139,6 +140,17 @@ class AdminUserService {
       `Admin (${adminUserId}) updated status of User (${targetUserId}) to isActive=${newIsActive}`
     );
 
+    // Non-blocking Audit Logging
+    const action = newIsActive ? 'ACTIVATE_USER' : 'DEACTIVATE_USER';
+    adminAuditLogService.logAction({
+      admin: adminUserId,
+      action,
+      targetType: 'User',
+      targetId: targetUserId,
+      description: `Admin updated user status to isActive=${newIsActive}`,
+      metadata: { previousStatus: existingUser.isActive, newStatus: newIsActive },
+    });
+
     return updatedUser;
   }
 
@@ -176,6 +188,16 @@ class AdminUserService {
       `Admin (${adminUserId}) updated role of User (${targetUserId}) to '${normalizedRole}'`
     );
 
+    // Non-blocking Audit Logging
+    adminAuditLogService.logAction({
+      admin: adminUserId,
+      action: 'CHANGE_USER_ROLE',
+      targetType: 'User',
+      targetId: targetUserId,
+      description: `Admin updated user role from '${existingUser.role}' to '${normalizedRole}'`,
+      metadata: { previousRole: existingUser.role, newRole: normalizedRole },
+    });
+
     return updatedUser;
   }
 
@@ -200,6 +222,16 @@ class AdminUserService {
     await adminUserRepository.deleteUser(targetUserId);
 
     logger.info(`Admin (${adminUserId}) deleted User (${targetUserId})`);
+
+    // Non-blocking Audit Logging
+    adminAuditLogService.logAction({
+      admin: adminUserId,
+      action: 'DELETE_USER',
+      targetType: 'User',
+      targetId: targetUserId,
+      description: `Admin deleted user account (${targetUserId})`,
+      metadata: { deletedEmail: existingUser.email, deletedRole: existingUser.role },
+    });
 
     return {
       message: 'User account deleted successfully',

@@ -1,4 +1,5 @@
 import companyRepository from '../company/company.repository.js';
+import adminAuditLogService from './adminAuditLog.service.js';
 import Job from '../job/job.model.js';
 import ApiError from '../utils/ApiError.js';
 import logger from '../utils/logger.js';
@@ -84,13 +85,25 @@ class AdminCompanyService {
       throw ApiError.badRequest(`Company with name '${companyData.companyName}' already exists`);
     }
 
+    const adminId = adminUser._id || adminUser.id;
     const payload = {
       ...companyData,
-      createdBy: companyData.createdBy || adminUser._id || adminUser.id,
+      createdBy: companyData.createdBy || adminId,
     };
 
     const newCompany = await companyRepository.createCompany(payload);
-    logger.info(`Admin (${adminUser._id || adminUser.id}) created company (${newCompany._id}) '${newCompany.companyName}'`);
+    logger.info(`Admin (${adminId}) created company (${newCompany._id}) '${newCompany.companyName}'`);
+
+    // Non-blocking Audit Logging
+    adminAuditLogService.logAction({
+      admin: adminId,
+      action: 'CREATE_COMPANY',
+      targetType: 'Company',
+      targetId: newCompany._id,
+      description: `Admin created company profile '${newCompany.companyName}'`,
+      metadata: { companyName: newCompany.companyName, industry: newCompany.industry },
+    });
+
     return newCompany;
   }
 
@@ -99,9 +112,10 @@ class AdminCompanyService {
    *
    * @param {string} companyId
    * @param {Object} updateData
+   * @param {Object} [adminUser]
    * @returns {Promise<Object>} Updated company document
    */
-  async updateCompany(companyId, updateData) {
+  async updateCompany(companyId, updateData, adminUser = null) {
     const existingCompany = await companyRepository.getCompany(companyId, '');
     if (!existingCompany) {
       throw ApiError.notFound('Company profile not found');
@@ -118,7 +132,21 @@ class AdminCompanyService {
       }
     }
 
-    return await companyRepository.updateCompany(companyId, updateData);
+    const updatedCompany = await companyRepository.updateCompany(companyId, updateData);
+
+    // Non-blocking Audit Logging
+    if (adminUser) {
+      adminAuditLogService.logAction({
+        admin: adminUser._id || adminUser.id,
+        action: 'UPDATE_COMPANY',
+        targetType: 'Company',
+        targetId: companyId,
+        description: `Admin updated company profile '${updatedCompany.companyName}'`,
+        metadata: { updatedFields: Object.keys(updateData) },
+      });
+    }
+
+    return updatedCompany;
   }
 
   /**
@@ -126,9 +154,10 @@ class AdminCompanyService {
    *
    * @param {string} companyId
    * @param {Object} statusData - { hiringStatus } or { status, isActive }
+   * @param {Object} [adminUser]
    * @returns {Promise<Object>} Updated company document
    */
-  async updateCompanyStatus(companyId, statusData = {}) {
+  async updateCompanyStatus(companyId, statusData = {}, adminUser = null) {
     const existingCompany = await companyRepository.getCompany(companyId, '');
     if (!existingCompany) {
       throw ApiError.notFound('Company profile not found');
@@ -147,16 +176,30 @@ class AdminCompanyService {
       );
     }
 
-    return await companyRepository.updateCompany(companyId, {
+    const updatedCompany = await companyRepository.updateCompany(companyId, {
       hiringStatus: targetHiringStatus,
     });
+
+    // Non-blocking Audit Logging
+    if (adminUser) {
+      adminAuditLogService.logAction({
+        admin: adminUser._id || adminUser.id,
+        action: 'UPDATE_COMPANY',
+        targetType: 'Company',
+        targetId: companyId,
+        description: `Admin updated company hiring status to '${targetHiringStatus}'`,
+        metadata: { previousStatus: existingCompany.hiringStatus, newStatus: targetHiringStatus },
+      });
+    }
+
+    return updatedCompany;
   }
 
   /**
    * 6. Delete a company record with Job Safety Guard.
    *
    * @param {string} companyId
-   * @param {Object} [options={ force: false }]
+   * @param {Object} [options={ force: false, adminUser: null }]
    * @returns {Promise<Object>} Deletion confirmation payload
    */
   async deleteCompany(companyId, options = {}) {
@@ -182,6 +225,18 @@ class AdminCompanyService {
 
     await companyRepository.deleteCompany(companyId);
     logger.info(`Deleted company profile (${companyId}) '${existingCompany.companyName}'`);
+
+    // Non-blocking Audit Logging
+    if (options.adminUser) {
+      adminAuditLogService.logAction({
+        admin: options.adminUser._id || options.adminUser.id,
+        action: 'DELETE_COMPANY',
+        targetType: 'Company',
+        targetId: companyId,
+        description: `Admin deleted company profile '${existingCompany.companyName}'`,
+        metadata: { companyName: existingCompany.companyName, removedJobsCount: associatedJobsCount },
+      });
+    }
 
     return {
       message: 'Company profile deleted successfully',

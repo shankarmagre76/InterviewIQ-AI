@@ -1,5 +1,6 @@
 import jobRepository from '../job/job.repository.js';
 import companyRepository from '../company/company.repository.js';
+import adminAuditLogService from './adminAuditLog.service.js';
 import Application from '../application/application.model.js';
 import ApiError from '../utils/ApiError.js';
 import logger from '../utils/logger.js';
@@ -113,13 +114,25 @@ class AdminJobService {
       }
     }
 
+    const adminId = adminUser._id || adminUser.id;
     const payload = {
       ...jobData,
-      createdBy: jobData.createdBy || adminUser._id || adminUser.id,
+      createdBy: jobData.createdBy || adminId,
     };
 
     const newJob = await jobRepository.createJob(payload);
-    logger.info(`Admin (${adminUser._id || adminUser.id}) created job (${newJob._id}) '${newJob.title}'`);
+    logger.info(`Admin (${adminId}) created job (${newJob._id}) '${newJob.title}'`);
+
+    // Non-blocking Audit Logging
+    adminAuditLogService.logAction({
+      admin: adminId,
+      action: 'CREATE_JOB',
+      targetType: 'Job',
+      targetId: newJob._id,
+      description: `Admin created job posting '${newJob.title}'`,
+      metadata: { jobTitle: newJob.title, companyId: newJob.company, workMode: newJob.workMode },
+    });
+
     return newJob;
   }
 
@@ -128,9 +141,10 @@ class AdminJobService {
    *
    * @param {string} jobId
    * @param {Object} updateData
+   * @param {Object} [adminUser]
    * @returns {Promise<Object>} Updated job document
    */
-  async updateJob(jobId, updateData) {
+  async updateJob(jobId, updateData, adminUser = null) {
     const existingJob = await jobRepository.getJob(jobId, '');
     if (!existingJob) {
       throw ApiError.notFound('Job posting not found');
@@ -152,7 +166,21 @@ class AdminJobService {
       }
     }
 
-    return await jobRepository.updateJob(jobId, updateData);
+    const updatedJob = await jobRepository.updateJob(jobId, updateData);
+
+    // Non-blocking Audit Logging
+    if (adminUser) {
+      adminAuditLogService.logAction({
+        admin: adminUser._id || adminUser.id,
+        action: 'UPDATE_JOB',
+        targetType: 'Job',
+        targetId: jobId,
+        description: `Admin updated job posting '${updatedJob.title}'`,
+        metadata: { updatedFields: Object.keys(updateData) },
+      });
+    }
+
+    return updatedJob;
   }
 
   /**
@@ -160,9 +188,10 @@ class AdminJobService {
    *
    * @param {string} jobId
    * @param {Object} statusData - { status: string } or { isActive: boolean }
+   * @param {Object} [adminUser]
    * @returns {Promise<Object>} Updated job document
    */
-  async updateJobStatus(jobId, statusData = {}) {
+  async updateJobStatus(jobId, statusData = {}, adminUser = null) {
     const existingJob = await jobRepository.getJob(jobId, '');
     if (!existingJob) {
       throw ApiError.notFound('Job posting not found');
@@ -181,14 +210,29 @@ class AdminJobService {
       );
     }
 
-    return await jobRepository.updateJob(jobId, { status: targetStatus });
+    const updatedJob = await jobRepository.updateJob(jobId, { status: targetStatus });
+
+    // Non-blocking Audit Logging
+    if (adminUser) {
+      const action = targetStatus === 'Paused' || targetStatus === 'Closed' ? 'DEACTIVATE_JOB' : 'UPDATE_JOB';
+      adminAuditLogService.logAction({
+        admin: adminUser._id || adminUser.id,
+        action,
+        targetType: 'Job',
+        targetId: jobId,
+        description: `Admin updated job status to '${targetStatus}'`,
+        metadata: { previousStatus: existingJob.status, newStatus: targetStatus },
+      });
+    }
+
+    return updatedJob;
   }
 
   /**
    * 6. Delete job posting with Application Safety Guard.
    *
    * @param {string} jobId
-   * @param {Object} [options={ force: false }]
+   * @param {Object} [options={ force: false, adminUser: null }]
    * @returns {Promise<Object>} Deletion confirmation payload
    */
   async deleteJob(jobId, options = {}) {
@@ -214,6 +258,18 @@ class AdminJobService {
 
     await jobRepository.deleteJob(jobId);
     logger.info(`Deleted job posting (${jobId}) '${existingJob.title}'`);
+
+    // Non-blocking Audit Logging
+    if (options.adminUser) {
+      adminAuditLogService.logAction({
+        admin: options.adminUser._id || options.adminUser.id,
+        action: 'DELETE_JOB',
+        targetType: 'Job',
+        targetId: jobId,
+        description: `Admin deleted job posting '${existingJob.title}'`,
+        metadata: { jobTitle: existingJob.title, removedApplicationsCount: associatedApplicationsCount },
+      });
+    }
 
     return {
       message: 'Job posting deleted successfully',

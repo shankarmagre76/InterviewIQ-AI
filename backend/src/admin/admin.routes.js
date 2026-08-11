@@ -73,6 +73,26 @@ import {
 } from './adminAiUsage.controller.js';
 import { adminAiQueryValidation } from './adminAiUsage.validation.js';
 
+// Platform Analytics Controllers & Validations
+import {
+  getDashboardOverview,
+  getUserAnalytics,
+  getJobAnalytics,
+  getApplicationAnalytics,
+  getAiAnalytics,
+} from './adminAnalytics.controller.js';
+import { adminAnalyticsQueryValidation } from './adminAnalytics.validation.js';
+
+// Audit Logging Controllers & Validations
+import {
+  listAuditLogs,
+  getAuditLogById,
+} from './adminAuditLog.controller.js';
+import {
+  adminAuditLogQueryValidation,
+  auditLogIdParamValidation,
+} from './adminAuditLog.validation.js';
+
 const router = Router();
 
 // 1. Protect all Admin routes with JWT Authentication first
@@ -82,7 +102,7 @@ router.use(authenticate);
 router.use(authorizeAdmin);
 
 /* ==========================================================================
-   ADMIN SYSTEM & HEALTH ROUTES (/api/v1/admin/*)
+   ADMIN SYSTEM & HEALTH & DASHBOARD ROUTES (/api/v1/admin/*)
    ========================================================================== */
 
 /**
@@ -111,24 +131,36 @@ router.get(
 
 /**
  * @desc    GET /api/v1/admin/dashboard
- *          Admin platform dashboard metrics
+ *          Comprehensive platform dashboard summary metrics overview across all entities
  * @access  Private (Admin Only)
  */
-router.get(
-  '/dashboard',
-  asyncHandler(async (req, res) => {
-    return new ApiResponse(
-      200,
-      {
-        totalUsers: 0,
-        activeInterviews: 0,
-        generatedRoadmaps: 0,
-        systemStatus: 'ONLINE',
-      },
-      'Admin dashboard data retrieved successfully'
-    ).send(res);
-  })
-);
+router.get('/dashboard', getDashboardOverview);
+
+/* ==========================================================================
+   ADMIN ANALYTICS ROUTES (/api/v1/admin/analytics/*)
+   ========================================================================== */
+
+// GET /api/v1/admin/analytics/users - User growth, status, & role analytics
+router.get('/analytics/users', adminAnalyticsQueryValidation, getUserAnalytics);
+
+// GET /api/v1/admin/analytics/jobs - Job & company analytics, workMode/employmentType
+router.get('/analytics/jobs', getJobAnalytics);
+
+// GET /api/v1/admin/analytics/applications - Application status distribution & conversion rates
+router.get('/analytics/applications', adminAnalyticsQueryValidation, getApplicationAnalytics);
+
+// GET /api/v1/admin/analytics/ai - AI consumption analytics across all 3 features
+router.get('/analytics/ai', adminAnalyticsQueryValidation, getAiAnalytics);
+
+/* ==========================================================================
+   ADMIN AUDIT LOGGING ROUTES (/api/v1/admin/audit-logs/*)
+   ========================================================================== */
+
+// GET /api/v1/admin/audit-logs - List administrative audit trail logs
+router.get('/audit-logs', adminAuditLogQueryValidation, listAuditLogs);
+
+// GET /api/v1/admin/audit-logs/:id - View single audit log details
+router.get('/audit-logs/:id', auditLogIdParamValidation, getAuditLogById);
 
 /* ==========================================================================
    ADMIN USER MANAGEMENT ROUTES (/api/v1/admin/users/*)
