@@ -36,6 +36,43 @@ import {
   companyIdParamValidation,
 } from './adminCompany.validation.js';
 
+// Job Controllers & Validations
+import {
+  listJobs,
+  createJob,
+  getJobById,
+  updateJob,
+  updateJobStatus,
+  deleteJob,
+} from './adminJob.controller.js';
+import {
+  adminJobQueryValidation,
+  adminJobStatusValidation,
+  createJobValidation,
+  updateJobValidation,
+  jobIdParamValidation,
+} from './adminJob.validation.js';
+
+// Application Monitoring Controllers & Validations
+import {
+  listApplications,
+  getApplicationById,
+  getApplicationStatistics,
+} from './adminApplication.controller.js';
+import {
+  adminApplicationQueryValidation,
+  applicationIdParamValidation,
+} from './adminApplication.validation.js';
+
+// AI Usage Telemetry Monitoring Controllers & Validations
+import {
+  getOverallAiUsage,
+  getResumeAnalysisUsage,
+  getInterviewUsage,
+  getRoadmapUsage,
+} from './adminAiUsage.controller.js';
+import { adminAiQueryValidation } from './adminAiUsage.validation.js';
+
 const router = Router();
 
 // 1. Protect all Admin routes with JWT Authentication first
@@ -136,5 +173,59 @@ router.patch('/companies/:id/status', adminCompanyStatusValidation, updateCompan
 
 // DELETE /api/v1/admin/companies/:id - Delete company profile (with Job Safety Guard)
 router.delete('/companies/:id', companyIdParamValidation, deleteCompany);
+
+/* ==========================================================================
+   ADMIN JOB MANAGEMENT ROUTES (/api/v1/admin/jobs/*)
+   ========================================================================== */
+
+// GET /api/v1/admin/jobs - List all jobs (Paginated, Search, Filter, Sort)
+router.get('/jobs', adminJobQueryValidation, listJobs);
+
+// POST /api/v1/admin/jobs - Create job posting
+router.post('/jobs', createJobValidation, createJob);
+
+// GET /api/v1/admin/jobs/:id - View job details
+router.get('/jobs/:id', jobIdParamValidation, getJobById);
+
+// PUT /api/v1/admin/jobs/:id - Update job posting
+router.put('/jobs/:id', updateJobValidation, updateJob);
+
+// PATCH /api/v1/admin/jobs/:id - Update job posting (partial)
+router.patch('/jobs/:id', updateJobValidation, updateJob);
+
+// PATCH /api/v1/admin/jobs/:id/status - Update job status
+router.patch('/jobs/:id/status', adminJobStatusValidation, updateJobStatus);
+
+// DELETE /api/v1/admin/jobs/:id - Delete job posting (with Application Safety Guard)
+router.delete('/jobs/:id', jobIdParamValidation, deleteJob);
+
+/* ==========================================================================
+   ADMIN APPLICATION MONITORING ROUTES (/api/v1/admin/applications/*)
+   ========================================================================== */
+
+// GET /api/v1/admin/applications/statistics - Platform-wide application metrics
+router.get('/applications/statistics', adminApplicationQueryValidation, getApplicationStatistics);
+
+// GET /api/v1/admin/applications - List platform-wide candidate applications
+router.get('/applications', adminApplicationQueryValidation, listApplications);
+
+// GET /api/v1/admin/applications/:id - View application details
+router.get('/applications/:id', applicationIdParamValidation, getApplicationById);
+
+/* ==========================================================================
+   ADMIN AI USAGE MONITORING ROUTES (/api/v1/admin/ai/*)
+   ========================================================================== */
+
+// GET /api/v1/admin/ai/usage - Overall AI usage summary & top user analytics
+router.get('/ai/usage', adminAiQueryValidation, getOverallAiUsage);
+
+// GET /api/v1/admin/ai/resume-analysis - Resume analysis AI usage metrics
+router.get('/ai/resume-analysis', adminAiQueryValidation, getResumeAnalysisUsage);
+
+// GET /api/v1/admin/ai/interviews - AI mock interview usage metrics
+router.get('/ai/interviews', adminAiQueryValidation, getInterviewUsage);
+
+// GET /api/v1/admin/ai/roadmaps - Learning roadmap AI usage metrics
+router.get('/ai/roadmaps', adminAiQueryValidation, getRoadmapUsage);
 
 export default router;
