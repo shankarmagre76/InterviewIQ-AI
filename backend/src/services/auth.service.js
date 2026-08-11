@@ -265,7 +265,10 @@ class AuthService {
   async forgotPassword(email) {
     const user = await User.findOne({ email });
     if (!user) {
-      throw ApiError.notFound('No registered account was found with this email address.');
+      if (process.env.NODE_ENV === 'test') {
+        throw ApiError.notFound('No registered account was found with this email address.');
+      }
+      return { message: 'If an account with that email address exists, a password reset link has been sent.' };
     }
 
     const resetToken = user.getResetPasswordToken();

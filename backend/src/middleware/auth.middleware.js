@@ -12,8 +12,11 @@ const authenticate = asyncHandler(async (req, res, next) => {
 
   // 1. Read Bearer token from Authorization header or cookies
   const authHeader = req.headers.authorization;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.split(' ')[1];
+  if (authHeader) {
+    if (!authHeader.startsWith('Bearer ')) {
+      throw ApiError.unauthorized('Access denied. Invalid authorization header format. Expected Bearer token.');
+    }
+    token = authHeader.split(' ')[1]?.trim();
   } else if (req.cookies?.accessToken) {
     token = req.cookies.accessToken;
   }
@@ -22,7 +25,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
     throw ApiError.unauthorized('Access denied. No authentication token provided.');
   }
 
-  // 2. Verify JWT Token
+  // 2. Verify JWT Token (Enforces HS256 algorithm & checks signature / expiry)
   let decoded;
   try {
     decoded = verifyAccessToken(token);
@@ -30,7 +33,7 @@ const authenticate = asyncHandler(async (req, res, next) => {
     throw ApiError.unauthorized('Invalid or expired authentication token.');
   }
 
-  if (!decoded || !decoded.id) {
+  if (!decoded || typeof decoded !== 'object' || !decoded.id) {
     throw ApiError.unauthorized('Invalid token payload.');
   }
 

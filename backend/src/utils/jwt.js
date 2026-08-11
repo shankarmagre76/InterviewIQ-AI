@@ -36,7 +36,7 @@ const getRefreshSecret = () => {
 export const generateAccessToken = (payload) => {
   const secret = getAccessSecret();
   const expiresIn = process.env.JWT_EXPIRES_IN || '1d';
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret, { algorithm: 'HS256', expiresIn });
 };
 
 /**
@@ -47,25 +47,25 @@ export const generateAccessToken = (payload) => {
 export const generateRefreshToken = (payload) => {
   const secret = getRefreshSecret();
   const expiresIn = process.env.REFRESH_TOKEN_EXPIRES_IN || '7d';
-  return jwt.sign(payload, secret, { expiresIn });
+  return jwt.sign(payload, secret, { algorithm: 'HS256', expiresIn });
 };
 
 /**
- * Verify Access Token
+ * Verify Access Token (Strictly enforced HS256 algorithm to prevent algorithm confusion attacks)
  * @param {string} token
  * @returns {object}
  */
 export const verifyAccessToken = (token) => {
   const secret = getAccessSecret();
-  return jwt.verify(token, secret);
+  return jwt.verify(token, secret, { algorithms: ['HS256'] });
 };
 
 /**
- * Verify Refresh Token
+ * Verify Refresh Token (Strictly enforced HS256 algorithm to prevent algorithm confusion attacks)
  * @param {string} token
  * @returns {object}
  */
 export const verifyRefreshToken = (token) => {
   const secret = getRefreshSecret();
-  return jwt.verify(token, secret);
+  return jwt.verify(token, secret, { algorithms: ['HS256'] });
 };
