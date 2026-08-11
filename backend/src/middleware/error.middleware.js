@@ -8,6 +8,11 @@ import logger from '../utils/logger.js';
 const errorHandler = (err, req, res, next) => {
   let error = err;
 
+  // Handle Body Parser Payload Too Large Errors (HTTP 413)
+  if (err.type === 'entity.too.large' || err.status === 413 || err.statusCode === 413) {
+    error = new ApiError(413, 'Payload Too Large. Request body exceeds maximum allowed 1MB limit.');
+  }
+
   // Handle Mongoose / MongoDB errors
   if (!(error instanceof ApiError)) {
     const statusCode = error.statusCode || error.status || 500;

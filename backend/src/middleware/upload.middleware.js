@@ -96,6 +96,19 @@ const pdfResumeUpload = multer({
 });
 
 /**
+ * Helper to inspect PDF Magic Bytes (%PDF- / 0x25 0x50 0x44 0x46)
+ */
+const verifyPdfBufferHeader = (buffer) => {
+  if (!buffer || buffer.length < 4) return false;
+  return (
+    buffer[0] === 0x25 && // %
+    buffer[1] === 0x50 && // P
+    buffer[2] === 0x44 && // D
+    buffer[3] === 0x46    // F
+  );
+};
+
+/**
  * Wrapper middleware to handle Multer upload and wrap Multer errors into ApiError instances
  * @param {string} fieldName - Form field name (default: 'profileImage')
  */
@@ -118,7 +131,7 @@ export const handleSingleUpload = (fieldName = 'profileImage') => {
 };
 
 /**
- * Wrapper middleware to handle single resume upload (PDF ONLY, max 5MB)
+ * Wrapper middleware to handle single resume upload (PDF ONLY with Magic Byte verification, max 5MB)
  * @param {string} fieldName - Form field name (default: 'resume')
  */
 export const handleResumeUpload = (fieldName = 'resume') => {
@@ -134,10 +147,19 @@ export const handleResumeUpload = (fieldName = 'resume') => {
       } else if (err) {
         return next(err);
       }
+
+      // Verify Magic Bytes for PDF buffer integrity
+      if (req.file && req.file.buffer) {
+        if (!verifyPdfBufferHeader(req.file.buffer)) {
+          return next(
+            ApiError.badRequest('Invalid PDF document structure. File header does not match valid PDF magic bytes.')
+          );
+        }
+      }
+
       next();
     });
   };
 };
 
 export default upload;
-

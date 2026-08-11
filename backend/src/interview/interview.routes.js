@@ -15,6 +15,7 @@ import {
   submitAnswerValidation,
 } from './interview.validation.js';
 import authenticate from '../middleware/auth.middleware.js';
+import { aiRateLimiter } from '../middleware/rateLimit.middleware.js';
 
 const router = Router();
 
@@ -22,12 +23,12 @@ const router = Router();
 router.use(authenticate);
 
 /**
- * @desc    POST /api/v1/interviews & POST /api/v1/interviews/start
+ * @desc    POST /api/v1/interviews & POST /api/v1/interviews/start (Rate limited: 10 AI operations/hour)
  *          Start a new AI Interview session and generate custom questions
  * @access  Private (JWT Protected)
  */
-router.post('/', startInterviewValidation, startInterview);
-router.post('/start', startInterviewValidation, startInterview);
+router.post('/', aiRateLimiter, startInterviewValidation, startInterview);
+router.post('/start', aiRateLimiter, startInterviewValidation, startInterview);
 
 /**
  * @desc    GET /api/v1/interviews
@@ -59,38 +60,25 @@ router.get('/:id/questions', interviewIdParamValidation, getQuestions);
 router.post('/:id/questions', interviewIdParamValidation, getQuestions);
 
 /**
- * @desc    POST /api/v1/interviews/:id/answers & POST /api/v1/interviews/:id/questions/:questionId/answer
- *          Submit candidate answer for AI evaluation and update session progress
+ * @desc    POST /api/v1/interviews/:id/answer
+ *          Submit audio/text answer for an interview question
  * @access  Private (JWT Protected)
  */
-router.post('/:id/answers', submitAnswerValidation, (req, res, next) => {
-  if (!req.params.questionId && req.body.questionId) {
-    req.params.questionId = req.body.questionId;
-  }
-  return submitAnswer(req, res, next);
-});
-router.post('/:id/questions/:questionId/answer', submitAnswerValidation, submitAnswer);
+router.post('/:id/answer', interviewIdParamValidation, submitAnswerValidation, submitAnswer);
+
+/**
+ * @desc    POST /api/v1/interviews/:id/complete & POST /api/v1/interviews/:id/finish
+ *          End an active interview session and generate AI feedback report
+ * @access  Private (JWT Protected)
+ */
+router.post('/:id/complete', interviewIdParamValidation, endInterview);
+router.post('/:id/finish', interviewIdParamValidation, endInterview);
 
 /**
  * @desc    GET /api/v1/interviews/:id/result
- *          Get evaluation report for a completed interview session
+ *          Fetch interview result evaluation report
  * @access  Private (JWT Protected)
  */
 router.get('/:id/result', interviewIdParamValidation, getInterviewResult);
-
-/**
- * @desc    POST /api/v1/interviews/:id/resume
- *          Resume an in-progress or interrupted interview session
- * @access  Private (JWT Protected)
- */
-router.post('/:id/resume', interviewIdParamValidation, resumeInterview);
-router.get('/:id/resume', interviewIdParamValidation, resumeInterview);
-
-/**
- * @desc    POST /api/v1/interviews/:id/end
- *          Conclude or cancel an interview session
- * @access  Private (JWT Protected)
- */
-router.post('/:id/end', interviewIdParamValidation, endInterview);
 
 export default router;

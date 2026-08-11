@@ -18,15 +18,16 @@ import {
   validate,
 } from '../validations/auth.validation.js';
 import authenticate from '../middleware/auth.middleware.js';
+import { authRateLimiter } from '../middleware/rateLimit.middleware.js';
 
 const router = Router();
 
-// Public Authentication Endpoints
-router.post('/register', registerValidation, validate, register);
-router.post('/login', loginValidation, validate, login);
-router.post('/refresh-token', refreshTokenValidation, validate, refreshToken);
-router.post('/forgot-password', forgotPasswordValidation, validate, forgotPassword);
-router.post('/reset-password', resetPasswordValidation, validate, resetPassword);
+// Public Authentication Endpoints (Protected by authRateLimiter)
+router.post('/register', authRateLimiter, registerValidation, validate, register);
+router.post('/login', authRateLimiter, loginValidation, validate, login);
+router.post('/refresh-token', authRateLimiter, refreshTokenValidation, validate, refreshToken);
+router.post('/forgot-password', authRateLimiter, forgotPasswordValidation, validate, forgotPassword);
+router.post('/reset-password', authRateLimiter, resetPasswordValidation, validate, resetPassword);
 router.get('/verify-email/:token', verifyEmail);
 
 // Protected Authentication Endpoints

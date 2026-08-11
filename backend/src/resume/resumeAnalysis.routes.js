@@ -11,6 +11,7 @@ import {
   validateAnalysisIdParam,
 } from './resumeAnalysis.validation.js';
 import authenticate from '../middleware/auth.middleware.js';
+import { aiRateLimiter } from '../middleware/rateLimit.middleware.js';
 
 const router = Router();
 
@@ -18,11 +19,11 @@ const router = Router();
 router.use(authenticate);
 
 /**
- * @desc    Initiate AI Resume Analysis for candidate
+ * @desc    Initiate AI Resume Analysis for candidate (Rate limited: 10 AI operations/hour)
  * @route   POST /api/v1/profile/resume/analyze (also /api/v1/resumes/analyze)
  * @access  Private (JWT Protected)
  */
-router.post('/analyze', validateAnalyzeResumeRequest, analyzeResume);
+router.post('/analyze', aiRateLimiter, validateAnalyzeResumeRequest, analyzeResume);
 
 /**
  * @desc    Get candidate's latest active resume analysis report

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authenticate from '../middleware/auth.middleware.js';
+import { aiRateLimiter } from '../middleware/rateLimit.middleware.js';
 import {
   generateRoadmap,
   getActiveRoadmap,
@@ -33,8 +34,8 @@ router.use(authenticate);
    ROADMAP ROUTES
    ========================================================================== */
 
-// POST /api/v1/roadmaps/generate - Generate or Regenerate AI Learning Roadmap
-router.post('/generate', generateRoadmapValidation, generateRoadmap);
+// POST /api/v1/roadmaps/generate - Generate or Regenerate AI Learning Roadmap (Rate limited: 10 AI ops/hour)
+router.post('/generate', aiRateLimiter, generateRoadmapValidation, generateRoadmap);
 
 // GET /api/v1/roadmaps/active - Retrieve candidate active roadmap
 router.get('/active', getActiveRoadmap);
@@ -61,16 +62,16 @@ router.delete('/:id', roadmapIdParamValidation, deleteRoadmap);
 // GET /api/v1/roadmaps/:id/tasks - Get tasks for a roadmap
 router.get('/:id/tasks', roadmapIdParamValidation, getTasks);
 
-// PATCH /api/v1/roadmaps/tasks/:taskId - Update task details
-router.patch('/tasks/:taskId', updateTaskValidation, updateTask);
+// PATCH /api/v1/roadmaps/tasks/:taskId - Generic task update
+router.patch('/tasks/:taskId', taskIdParamValidation, updateTaskValidation, updateTask);
 
-// PATCH /api/v1/roadmaps/tasks/:taskId/start - Mark task as IN_PROGRESS
+// PATCH /api/v1/roadmaps/tasks/:taskId/start - Start task
 router.patch('/tasks/:taskId/start', taskIdParamValidation, startTask);
 
-// PATCH /api/v1/roadmaps/tasks/:taskId/complete - Mark task as COMPLETED
+// PATCH /api/v1/roadmaps/tasks/:taskId/complete - Complete task
 router.patch('/tasks/:taskId/complete', taskIdParamValidation, completeTask);
 
-// PATCH /api/v1/roadmaps/tasks/:taskId/skip - Mark task as SKIPPED
+// PATCH /api/v1/roadmaps/tasks/:taskId/skip - Skip task
 router.patch('/tasks/:taskId/skip', taskIdParamValidation, skipTask);
 
 // PATCH /api/v1/roadmaps/tasks/:taskId/reopen - Reopen task
