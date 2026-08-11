@@ -57,7 +57,6 @@ const adminAuditLogSchema = new mongoose.Schema(
     targetId: {
       type: mongoose.Schema.Types.ObjectId,
       default: null,
-      index: true,
     },
     description: {
       type: String,

@@ -13,6 +13,7 @@ import routes from './routes/index.js';
 import notFoundHandler from './middleware/notFound.middleware.js';
 import errorHandler from './middleware/error.middleware.js';
 import { globalRateLimiter } from './middleware/rateLimit.middleware.js';
+import requestIdMiddleware from './middleware/requestId.middleware.js';
 
 // Resolve __dirname equivalent for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -22,6 +23,9 @@ const app = express();
 
 // Disable Express information disclosure header
 app.disable('x-powered-by');
+
+// Attach unique X-Request-ID correlation tracking middleware
+app.use(requestIdMiddleware);
 
 // 1. Configure Security HTTP Headers (Helmet)
 app.use(
@@ -59,7 +63,7 @@ app.use(
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Request-ID'],
     optionsSuccessStatus: 200,
   })
 );
@@ -73,33 +77,41 @@ app.use(mongoSanitize());
 // 5. HTTP Parameter Pollution Defense (Prevents array parameter spoofing)
 app.use(hpp());
 
-// 6. HTTP Request Logging
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-} else if (process.env.NODE_ENV !== 'test') {
-  app.use(morgan('combined'));
-}
-
-// 7. Response Compression
-app.use(compression());
-
-// 8. Body Parsers with hardened payload limits (1MB default limit)
+// 6. Request Body Parsers (Strict 1MB limits)
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-
-// 9. Cookie Parser
 app.use(cookieParser());
 
-// 10. Static Files Serving for Local Uploads
+// Gzip Compression
+app.use(compression());
+
+// HTTP Request Logging (Combined format in Production, Dev format in Development)
+if (process.env.NODE_ENV !== 'test') {
+  const morganFormat = process.env.NODE_ENV === 'production' ? 'combined' : 'dev';
+  app.use(morgan(morganFormat));
+}
+
+// Serve uploaded static files safely
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// 11. Mount API Routes
-app.use('/', routes);
+// Mount API v1 Namespace
+app.use('/api/v1', routes);
 
-// 12. 404 Route Not Found Handler
+// Centralized Health Check Endpoints
+app.get(['/', '/health', '/api/health', '/api/v1/health'], (req, res) => {
+  res.status(200).json({
+    status: 'healthy',
+    message: 'InterviewIQ AI API is operational',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    requestId: req.requestId,
+  });
+});
+
+// Handle Unmatched Routes (HTTP 404)
 app.use(notFoundHandler);
 
-// 13. Centralized Error Handling Middleware
+// Centralized Global Error Handler
 app.use(errorHandler);
 
 export default app;

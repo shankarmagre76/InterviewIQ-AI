@@ -249,7 +249,6 @@ const profileSchema = new mongoose.Schema(
       ref: 'User',
       required: [true, 'User ID is required for profile creation'],
       unique: true,
-      index: true,
     },
     firstName: {
       type: String,
@@ -345,9 +344,6 @@ const profileSchema = new mongoose.Schema(
 /* ==========================================================================
    Indexes for Production Performance Optimization
    ========================================================================== */
-
-// Single field unique index to enforce 1-to-1 relationship with User
-profileSchema.index({ user: 1 }, { unique: true });
 
 // Compound index on first name and last name for fast candidate name search
 profileSchema.index({ firstName: 1, lastName: 1 });

@@ -76,13 +76,11 @@ const learningTaskSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: [true, 'User reference is required'],
-      index: true,
     },
     roadmap: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'LearningRoadmap',
       required: [true, 'Learning Roadmap reference is required'],
-      index: true,
     },
     phase: {
       type: mongoose.Schema.Types.ObjectId,
