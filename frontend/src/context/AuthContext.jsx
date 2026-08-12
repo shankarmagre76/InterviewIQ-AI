@@ -183,12 +183,15 @@ export const AuthProvider = ({ children }) => {
     refreshToken,
     isAuthenticated: Boolean(accessToken && user),
     loading,
+    isLoading: loading,
     login,
     register,
     logout,
     updateUser,
+    refreshUser: restoreSession,
     refreshSession: restoreSession,
   };
+
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
