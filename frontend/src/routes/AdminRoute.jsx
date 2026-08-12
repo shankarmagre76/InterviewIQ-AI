@@ -1,23 +1,31 @@
 import React from 'react';
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { USER_ROLES } from '../constants/appConstants';
 import { Spinner } from '../components/ui/LoadingState';
 
 export const AdminRoute = () => {
   const { user, isAuthenticated, loading } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#080c14] flex items-center justify-center">
+      <div className="min-h-screen bg-[#080c14] flex flex-col items-center justify-center gap-3">
         <Spinner size="lg" />
+        <span className="text-xs text-slate-400 font-medium">Verifying Administrative Role...</span>
       </div>
     );
   }
 
-  if (!isAuthenticated || user?.role !== USER_ROLES.ADMIN) {
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  const role = user?.role?.toLowerCase();
+  if (role !== 'admin') {
     return <Navigate to="/dashboard" replace />;
   }
 
   return <Outlet />;
 };
+
+export default AdminRoute;
