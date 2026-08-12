@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, LogIn } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -13,6 +13,9 @@ export const LoginPage = () => {
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const from = location.state?.from?.pathname || '/dashboard';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,9 +23,9 @@ export const LoginPage = () => {
     setError('');
     try {
       await login({ email, password });
-      navigate('/dashboard');
+      navigate(from, { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.message || 'Login failed. Please check your credentials.');
+      setError(err?.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -40,7 +43,7 @@ export const LoginPage = () => {
           <Input
             label="Email Address"
             type="email"
-            placeholder="you@example.com"
+            placeholder="candidate@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leftIcon={<Mail className="w-4 h-4" />}
@@ -62,7 +65,7 @@ export const LoginPage = () => {
           </Button>
           <p className="text-xs text-slate-400 text-center">
             Don't have an account?{' '}
-            <Link to="/auth/register" className="text-indigo-400 font-semibold hover:underline">
+            <Link to="/register" className="text-indigo-400 font-semibold hover:underline">
               Create one now
             </Link>
           </p>

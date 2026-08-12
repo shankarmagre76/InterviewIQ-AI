@@ -3,13 +3,16 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Mail, Lock, UserPlus } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { useAuth } from '../../hooks/useAuth';
 
 export const RegisterPage = () => {
-  const [name, setName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('Student');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const { register } = useAuth();
@@ -20,10 +23,10 @@ export const RegisterPage = () => {
     setLoading(true);
     setError('');
     try {
-      await register({ name, email, password });
-      navigate('/dashboard');
+      await register({ firstName, lastName, email, password, role });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err?.response?.data?.message || 'Registration failed. Please try again.');
+      setError(err?.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -38,18 +41,27 @@ export const RegisterPage = () => {
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
           {error && <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">{error}</div>}
-          <Input
-            label="Full Name"
-            placeholder="Jane Doe"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            leftIcon={<User className="w-4 h-4" />}
-            required
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="First Name"
+              placeholder="Jane"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              leftIcon={<User className="w-4 h-4" />}
+              required
+            />
+            <Input
+              label="Last Name"
+              placeholder="Doe"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              required
+            />
+          </div>
           <Input
             label="Email Address"
             type="email"
-            placeholder="you@example.com"
+            placeholder="candidate@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             leftIcon={<Mail className="w-4 h-4" />}
@@ -64,6 +76,14 @@ export const RegisterPage = () => {
             leftIcon={<Lock className="w-4 h-4" />}
             required
           />
+          <Select
+            label="Account Role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+          >
+            <option value="Student">Candidate / Student</option>
+            <option value="Recruiter">Recruiter / Employer</option>
+          </Select>
         </CardContent>
         <CardFooter className="flex-col gap-3">
           <Button type="submit" variant="primary" fullWidth isLoading={loading} leftIcon={<UserPlus className="w-4 h-4" />}>
@@ -71,7 +91,7 @@ export const RegisterPage = () => {
           </Button>
           <p className="text-xs text-slate-400 text-center">
             Already registered?{' '}
-            <Link to="/auth/login" className="text-indigo-400 font-semibold hover:underline">
+            <Link to="/login" className="text-indigo-400 font-semibold hover:underline">
               Sign in
             </Link>
           </p>
