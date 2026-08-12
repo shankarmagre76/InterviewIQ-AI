@@ -3,6 +3,8 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Spinner } from '../components/ui/LoadingState';
 
+const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/auth/login', '/auth/register', '/auth/forgot-password'];
+
 export const PublicRoute = () => {
   const { isAuthenticated, loading } = useAuth();
   const location = useLocation();
@@ -16,8 +18,11 @@ export const PublicRoute = () => {
   }
 
   if (isAuthenticated) {
-    const from = location.state?.from?.pathname || '/dashboard';
-    return <Navigate to={from} replace />;
+    const rawFrom = location.state?.from?.pathname;
+    const isAuthPath = rawFrom && AUTH_PATHS.some((p) => rawFrom.toLowerCase().startsWith(p));
+    const targetPath = rawFrom && !isAuthPath ? rawFrom : '/dashboard';
+
+    return <Navigate to={targetPath} replace />;
   }
 
   return <Outlet />;
