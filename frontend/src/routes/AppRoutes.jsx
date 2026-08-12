@@ -18,6 +18,10 @@ import LoginPage from '../pages/auth/LoginPage';
 import RegisterPage from '../pages/auth/RegisterPage';
 import ForgotPasswordPage from '../pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/auth/ResetPasswordPage';
+import VerifyEmailPage from '../pages/auth/VerifyEmailPage';
+import OnboardingPage from '../pages/onboarding/OnboardingPage';
+
+
 
 
 // Protected Candidate Pages
@@ -62,7 +66,10 @@ export const AppRoutes = () => {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
           <Route path="/auth/login" element={<LoginPage />} />
+
 
           <Route path="/auth/register" element={<RegisterPage />} />
           <Route path="/auth/forgot-password" element={<ForgotPasswordPage />} />
@@ -73,8 +80,9 @@ export const AppRoutes = () => {
       <Route element={<ProtectedRoute />}>
         <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
-
+          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+
           <Route path="/resume" element={<ResumeOverviewPage />} />
           <Route path="/resume/analysis" element={<ResumeAnalysisPage />} />
           <Route path="/companies" element={<CompaniesPage />} />
