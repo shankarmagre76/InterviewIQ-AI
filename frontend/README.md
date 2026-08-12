@@ -1,16 +1,46 @@
-# React + Vite
+# InterviewIQ AI — Frontend Setup & Environment Guide
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Modern AI Career SaaS Client Application for Technical Candidates & Recruiters.
 
-Currently, two official plugins are available:
+## 🚀 Environment Configuration
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+The frontend uses Vite for bundling and environment variable management.
 
-## React Compiler
+### Environment Variable Security Rules
+1. **Prefix Rule**: Only variables starting with `VITE_` are exposed to the browser bundle via `import.meta.env`.
+2. **Zero Secret Policy**: **NEVER** put backend credentials (`MONGO_URI`, `JWT_SECRET`, `GEMINI_API_KEY`, `CLOUDINARY_API_SECRET`, `SMTP_PASS`) into frontend `.env` files.
+3. **Ignored Files**: All `.env` and `.env.local` files containing actual values are ignored by `.gitignore`.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the Oxlint configuration
+### Available Environment Variables
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+| Variable Name | Description | Default (Dev) | Default (Prod) |
+| :--- | :--- | :--- | :--- |
+| `VITE_API_BASE_URL` | Backend Express API v1 Endpoint | `http://localhost:5000/api/v1` | `/api/v1` |
+| `VITE_APP_NAME` | Public Application Brand Name | `InterviewIQ AI (Dev)` | `InterviewIQ AI` |
+| `VITE_APP_ENV` | Application Environment | `development` | `production` |
+
+---
+
+### Local Development Setup
+
+1. Copy `.env.example` to `.env.local`:
+   ```bash
+   cp .env.example .env.local
+   ```
+2. Adjust `VITE_API_BASE_URL` if your backend Express server runs on a non-default port.
+3. Start the dev server:
+   ```bash
+   npm run dev
+   ```
+
+---
+
+### Production Build
+
+To build the static bundle for production deployment:
+```bash
+npm run build
+```
+Vite will automatically load `.env.production` during the production build.

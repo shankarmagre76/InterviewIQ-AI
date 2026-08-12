@@ -1,8 +1,9 @@
 import axios from 'axios';
 import { storage } from '../utils/helpers';
+import { env } from '../config/env';
 
-const DEFAULT_BASE_URL = '/api/v1';
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || DEFAULT_BASE_URL;
+const API_BASE_URL = env.API_BASE_URL;
+
 
 /**
  * Centralized Axios Instance for InterviewIQ AI
