@@ -2,9 +2,10 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 
 // Layouts
-import { RootLayout } from '../layouts/RootLayout';
+import { MainLayout } from '../layouts/MainLayout';
 import { AuthLayout } from '../layouts/AuthLayout';
 import { AdminLayout } from '../layouts/AdminLayout';
+
 
 // Guards
 import { ProtectedRoute } from './ProtectedRoute';
@@ -66,8 +67,9 @@ export const AppRoutes = () => {
 
       {/* Protected User Candidate Routes */}
       <Route element={<ProtectedRoute />}>
-        <Route element={<RootLayout />}>
+        <Route element={<MainLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/resume" element={<ResumeOverviewPage />} />
           <Route path="/resume/analysis" element={<ResumeAnalysisPage />} />
