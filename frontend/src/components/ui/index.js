@@ -15,8 +15,10 @@ export { Tooltip } from './Tooltip';
 
 // Feedback Components
 export { Alert } from './Alert';
-export { ToastProvider, useToast } from './Toast';
+export { ToastProvider } from './Toast';
+export { useToast } from '../../hooks/useToast';
 export { Spinner, Skeleton, SkeletonText, SkeletonCard } from './LoadingState';
+
 export { EmptyState } from './EmptyState';
 export { ErrorState } from './ErrorState';
 export { ConfirmDialog } from './ConfirmDialog';

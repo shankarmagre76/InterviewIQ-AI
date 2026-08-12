@@ -1,8 +1,8 @@
-import React, { createContext, useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { storage, parseApiError } from '../utils/helpers';
 import { authService } from '../services/authService';
+import { AuthContext } from './AuthContext';
 
-export const AuthContext = createContext(null);
 
 const normalizeUser = (userData) => {
   if (!userData) return null;

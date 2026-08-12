@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { CheckCircle2, AlertCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { ToastContext } from '../../context/ToastContext';
 
-const ToastContext = createContext(null);
 
 const toastConfig = {
   success: {
@@ -72,24 +72,4 @@ export const ToastProvider = ({ children }) => {
       </div>
     </ToastContext.Provider>
   );
-};
-
-export const useToast = () => {
-  const context = useContext(ToastContext);
-  if (!context) {
-    // Graceful fallback dummy if provider is not present
-    return {
-      success: (msg) => console.log('[Toast Success]:', msg),
-      error: (msg) => console.error('[Toast Error]:', msg),
-      warning: (msg) => console.warn('[Toast Warning]:', msg),
-      info: (msg) => console.info('[Toast Info]:', msg),
-    };
-  }
-
-  return {
-    success: (msg, duration) => context.addToast(msg, 'success', duration),
-    error: (msg, duration) => context.addToast(msg, 'error', duration),
-    warning: (msg, duration) => context.addToast(msg, 'warning', duration),
-    info: (msg, duration) => context.addToast(msg, 'info', duration),
-  };
 };
