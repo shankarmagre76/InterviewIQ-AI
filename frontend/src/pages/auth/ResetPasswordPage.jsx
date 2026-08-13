@@ -7,6 +7,8 @@ import { Button } from '../../components/ui/Button';
 import { Alert } from '../../components/ui/Alert';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { authService } from '../../services/authService';
+import { parseApiError } from '../../utils/helpers';
+
 
 const calculatePasswordStrength = (pwd) => {
   if (!pwd) return { score: 0, label: '', color: 'rose' };
@@ -76,12 +78,7 @@ export const ResetPasswordPage = () => {
       await authService.resetPassword({ token, newPassword });
       setIsSuccess(true);
     } catch (err) {
-      const errorMessage = err?.message || '';
-      if (errorMessage.includes('Network Error') || err?.code === 'ERR_NETWORK') {
-        setApiError('Unable to connect to authentication server. Please check your internet connection.');
-      } else {
-        setApiError('Invalid or expired password reset token. Please request a new link.');
-      }
+      setApiError(parseApiError(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -225,10 +222,12 @@ export const ResetPasswordPage = () => {
               variant="primary"
               fullWidth
               isLoading={isSubmitting}
+              disabled={isSubmitting}
               leftIcon={<KeyRound className="w-4 h-4" />}
             >
               Update Password
             </Button>
+
 
             <Link
               to="/login"

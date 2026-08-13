@@ -8,6 +8,8 @@ import { Button } from '../../components/ui/Button';
 import { Alert } from '../../components/ui/Alert';
 import { authService } from '../../services/authService';
 
+
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const ForgotPasswordPage = () => {
@@ -52,8 +54,7 @@ export const ForgotPasswordPage = () => {
         setDevResetToken(resData.devResetToken);
       }
     } catch (err) {
-      const errorMessage = err?.message || '';
-      if (errorMessage.includes('Network Error') || err?.code === 'ERR_NETWORK') {
+      if (err?.code === 'ERR_NETWORK' || err?.message?.includes('Network Error')) {
         setApiError('Unable to connect to authentication server. Please check your internet connection.');
       } else {
         // Generic response messaging to prevent account enumeration
@@ -132,10 +133,12 @@ export const ForgotPasswordPage = () => {
               variant="primary"
               fullWidth
               isLoading={isSubmitting}
+              disabled={isSubmitting}
               leftIcon={<Send className="w-4 h-4" />}
             >
               Send Reset Link
             </Button>
+
 
             <Link
               to="/login"

@@ -8,6 +8,8 @@ import { Spinner } from '../../components/ui/LoadingState';
 import { Alert } from '../../components/ui/Alert';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../hooks/useAuth';
+import { parseApiError } from '../../utils/helpers';
+
 
 export const VerifyEmailPage = () => {
   const { token: pathToken } = useParams();
@@ -44,14 +46,10 @@ export const VerifyEmailPage = () => {
         }
       } catch (err) {
         if (isMounted) {
-          const msg = err?.response?.data?.message || err?.message;
-          if (msg?.includes('Network Error') || err?.code === 'ERR_NETWORK') {
-            setErrorMessage('Unable to connect to authentication server. Please check your internet connection.');
-          } else {
-            setErrorMessage('Invalid or expired email verification token. Links expire after 24 hours.');
-          }
+          setErrorMessage(parseApiError(err));
         }
       } finally {
+
         if (isMounted) {
           setLoading(false);
         }

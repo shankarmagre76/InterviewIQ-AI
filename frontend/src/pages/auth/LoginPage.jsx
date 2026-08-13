@@ -6,6 +6,8 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Alert } from '../../components/ui/Alert';
 import { useAuth } from '../../hooks/useAuth';
+import { parseApiError } from '../../utils/helpers';
+
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -62,19 +64,10 @@ export const LoginPage = () => {
       const redirectPath = from || (userRole === 'admin' ? '/admin' : '/dashboard');
       navigate(redirectPath, { replace: true });
     } catch (err) {
-      const errorMessage = err?.message || '';
-
-      if (errorMessage.includes('Network Error') || err?.code === 'ERR_NETWORK') {
-        setApiError('Unable to connect to authentication server. Please check your internet connection.');
-      } else if (errorMessage.toLowerCase().includes('deactivated')) {
-        setApiError('Your candidate account is currently deactivated. Please contact support.');
-      } else {
-        setApiError('Invalid email or password. Please double-check your credentials.');
-      }
+      setApiError(parseApiError(err));
     } finally {
       setIsSubmitting(false);
     }
-
   };
 
   return (
@@ -148,10 +141,12 @@ export const LoginPage = () => {
             variant="primary"
             fullWidth
             isLoading={isSubmitting}
+            disabled={isSubmitting}
             leftIcon={<LogIn className="w-4 h-4" />}
           >
             Sign In
           </Button>
+
 
           <p className="text-xs text-slate-400 text-center">
             Don't have an account?{' '}

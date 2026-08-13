@@ -24,6 +24,8 @@ import { ProgressBar } from '../../components/ui/ProgressBar';
 import { Alert } from '../../components/ui/Alert';
 import { useAuth } from '../../hooks/useAuth';
 import { profileService } from '../../services/profileService';
+import { parseApiError } from '../../utils/helpers';
+
 
 const POPULAR_SKILLS = [
   'React',
@@ -144,11 +146,11 @@ export const OnboardingPage = () => {
       await refreshUser();
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      const msg = err?.response?.data?.message || err?.message;
-      setApiError(msg || 'Failed to save onboarding profile. Please try again.');
+      setApiError(parseApiError(err));
     } finally {
       setIsSubmitting(false);
     }
+
   };
 
   const stepProgress = Math.round((currentStep / 6) * 100);

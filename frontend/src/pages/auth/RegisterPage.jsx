@@ -9,6 +9,8 @@ import { Button } from '../../components/ui/Button';
 import { Alert } from '../../components/ui/Alert';
 import { ProgressBar } from '../../components/ui/ProgressBar';
 import { useAuth } from '../../hooks/useAuth';
+import { parseApiError } from '../../utils/helpers';
+
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -105,15 +107,7 @@ export const RegisterPage = () => {
 
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      const errorMessage = err?.message || '';
-
-      if (errorMessage.includes('Network Error') || err?.code === 'ERR_NETWORK') {
-        setApiError('Unable to connect to authentication server. Please check your internet connection.');
-      } else if (errorMessage.toLowerCase().includes('already exists')) {
-        setApiError('An account with this email address already exists. Please log in or use a different email.');
-      } else {
-        setApiError(errorMessage || 'Registration failed. Please review your information and try again.');
-      }
+      setApiError(parseApiError(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -266,10 +260,12 @@ export const RegisterPage = () => {
             variant="primary"
             fullWidth
             isLoading={isSubmitting}
+            disabled={isSubmitting}
             leftIcon={<UserPlus className="w-4 h-4" />}
           >
             Create Account & Get Started
           </Button>
+
 
           <p className="text-xs text-slate-400 text-center">
             Already registered?{' '}

@@ -1,5 +1,5 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   FileText,
@@ -11,8 +11,11 @@ import {
   Palette,
   ShieldAlert,
   X,
+  LogOut,
 } from 'lucide-react';
 import { NAV_ITEMS } from '../../constants/navigation';
+import { useAuth } from '../../hooks/useAuth';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
 
 const iconMap = {
   LayoutDashboard,
@@ -27,6 +30,23 @@ const iconMap = {
 };
 
 export const Sidebar = ({ isOpen, onClose }) => {
+  const { logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await logout();
+    } finally {
+      setIsLoggingOut(false);
+      setIsLogoutModalOpen(false);
+      if (onClose) onClose();
+      navigate('/login', { replace: true });
+    }
+  };
+
   return (
     <>
       {/* Mobile Backdrop */}
@@ -47,6 +67,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
           <div className="flex items-center justify-between lg:hidden mb-6 px-2">
             <span className="text-sm font-bold text-slate-200">Navigation Menu</span>
             <button
+              type="button"
               onClick={onClose}
               className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-900"
             >
@@ -79,13 +100,38 @@ export const Sidebar = ({ isOpen, onClose }) => {
           </nav>
         </div>
 
-        <div className="p-4 border-t border-slate-800/60">
+        <div className="p-4 border-t border-slate-800/60 space-y-3">
           <div className="glass-panel p-3.5 rounded-xl text-xs space-y-1">
             <p className="font-semibold text-slate-200">InterviewIQ Engine</p>
             <p className="text-[11px] text-slate-400">Gemini 1.5 Pro Active</p>
           </div>
+
+          {isAuthenticated && (
+            <button
+              type="button"
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="w-full flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/20 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign Out</span>
+            </button>
+          )}
         </div>
       </aside>
+
+      {/* Logout Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={handleLogout}
+        title="Sign Out of InterviewIQ AI"
+        description="Are you sure you want to end your candidate session? You will need to log back in to access mock interviews and resume tools."
+        confirmText="Sign Out"
+        variant="danger"
+        isLoading={isLoggingOut}
+      />
     </>
   );
 };
+
+export default Sidebar;
