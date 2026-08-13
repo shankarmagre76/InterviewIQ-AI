@@ -1,104 +1,138 @@
 import React from 'react';
-import { PageHeader } from '../../components/common/PageHeader';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card';
-import { Button } from '../../components/ui/Button';
-import { Badge } from '../../components/ui/Badge';
-import { ScoreChart } from '../../components/charts/ScoreChart';
-import { Sparkles, FileText, Video, Map, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { useDashboard } from '../../hooks/useDashboard';
 
+// Dashboard Modular UI Components
+import {
+  DashboardHeader,
+  QuickActionsCard,
+  CareerReadinessCard,
+  ResumeAtsCard,
+  InterviewPerformanceCard,
+  ApplicationOverviewCard,
+  LearningProgressCard,
+  RecentActivityCard,
+} from '../../components/dashboard';
+
+// UI Feedback Primitives
+import { SkeletonCard, ChartSkeleton, ActivitySkeleton } from '../../components/ui/LoadingState';
+import { ErrorState } from '../../components/ui/ErrorState';
+
+/**
+ * Main Authenticated Candidate Dashboard Page
+ * Integrates all dashboard sections backed by useDashboard() hook with robust loading, empty, & error states.
+ */
 export const DashboardPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { data, loading, error, refresh } = useDashboard('main');
+
+  const handleStartInterview = () => {
+    navigate('/interviews');
+  };
+
+  // Handle Loading Skeleton Layout (Avoids layout shifts)
+  if (loading && !data) {
+    return (
+      <div className="space-y-6 sm:space-y-8 pb-10">
+        {/* Header Skeleton */}
+        <div className="w-full h-44 rounded-3xl animate-pulse bg-slate-900/80 border border-slate-800" />
+
+        {/* Quick Actions Grid Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+
+        {/* Primary Row Skeletons */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <ChartSkeleton height={280} className="lg:col-span-2" />
+          <div className="flex flex-col gap-6">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </div>
+
+        {/* Operational Row Skeletons */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <ActivitySkeleton count={4} />
+        </div>
+      </div>
+    );
+  }
+
+  // Handle API Error State (Sanitizes raw API stack traces)
+  if (error && !data) {
+    return (
+      <div className="py-12 max-w-xl mx-auto">
+        <ErrorState
+          title="Dashboard Analytics Unavailable"
+          message={error || 'Unable to load dashboard data. Try again.'}
+          onRetry={refresh}
+        />
+      </div>
+    );
+  }
+
+  const profile = data?.profile || {};
+  const careerReadiness = data?.careerReadiness || {};
+  const resume = data?.resume || {};
+  const interviews = data?.interviews || {};
+  const applications = data?.applications || {};
+  const recentActivity = data?.recentActivity || [];
 
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Candidate Dashboard"
-        description="Overview of your ATS resume scores, mock interview performance, and learning roadmaps."
-        action={
-          <Button variant="primary" size="sm" onClick={() => navigate('/interviews')} leftIcon={<Sparkles className="w-4 h-4" />}>
-            Start AI Interview
-          </Button>
-        }
+    <div className="space-y-6 sm:space-y-8 pb-10">
+      {/* 1. Welcome / Header Section */}
+      <DashboardHeader
+        user={user}
+        profile={profile}
+        loading={loading}
+        onRefresh={refresh}
+        onStartInterview={handleStartInterview}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <Card variant="glass">
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-              <FileText className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400">ATS Resume Score</p>
-              <h3 className="text-2xl font-bold text-white">88 <span className="text-xs text-slate-500 font-normal">/ 100</span></h3>
-            </div>
-          </CardContent>
-        </Card>
+      {/* 2. Quick Actions Grid */}
+      <section aria-label="Quick Actions">
+        <QuickActionsCard />
+      </section>
 
-        <Card variant="glass">
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
-              <Video className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400">Completed Interviews</p>
-              <h3 className="text-2xl font-bold text-white">6 <span className="text-xs text-slate-500 font-normal">sessions</span></h3>
-            </div>
-          </CardContent>
-        </Card>
+      {/* 3. Hero Analytics Row: Career Readiness (2 Cols) + Resume & Interview Cards (1 Col) */}
+      <section aria-label="Career Readiness and Primary Metrics" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Career Readiness Composite Score Card (Left 2 Columns) */}
+        <div className="lg:col-span-2 flex">
+          <CareerReadinessCard careerReadiness={careerReadiness} />
+        </div>
 
-        <Card variant="glass">
-          <CardContent className="flex items-center gap-4 p-5">
-            <div className="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-              <Map className="w-6 h-6" />
-            </div>
-            <div>
-              <p className="text-xs text-slate-400">Roadmap Progress</p>
-              <h3 className="text-2xl font-bold text-white">72% <span className="text-xs text-slate-500 font-normal">completed</span></h3>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        {/* Resume ATS & Interview Performance Stacked Cards (Right 1 Column) */}
+        <div className="flex flex-col gap-6">
+          <ResumeAtsCard resume={resume} />
+          <InterviewPerformanceCard interviews={interviews} />
+        </div>
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card variant="glass" className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Skill Breakdown Analytics</CardTitle>
-            <CardDescription>Multi-dimensional score breakdown across recent interview questions.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScoreChart />
-          </CardContent>
-        </Card>
+      {/* 4. Operational & Activity Row: Application Overview, Learning Progress & Activity Stream */}
+      <section aria-label="Applications, Learning & Activity" className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Application Overview (1 Col) */}
+        <div className="flex">
+          <ApplicationOverviewCard applications={applications} />
+        </div>
 
-        <Card variant="glass">
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest milestones & AI feedback.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-200">System Design Session</span>
-                <Badge variant="success" size="sm">90%</Badge>
-              </div>
-              <p className="text-xs text-slate-400">Evaluated 2 hours ago by Gemini 1.5 Pro</p>
-            </div>
+        {/* Learning Progress Roadmap (1 Col) */}
+        <div className="flex">
+          <LearningProgressCard profile={profile} />
+        </div>
 
-            <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-200">Resume Uploaded</span>
-                <Badge variant="primary" size="sm">ATS Parsed</Badge>
-              </div>
-              <p className="text-xs text-slate-400">Senior Full Stack Engineer Role</p>
-            </div>
-
-            <Button variant="outline" size="sm" fullWidth onClick={() => navigate('/interviews')} rightIcon={<ArrowRight className="w-4 h-4" />}>
-              View All Activity
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+        {/* Recent Activity Stream (1 Col) */}
+        <div className="flex">
+          <RecentActivityCard recentActivity={recentActivity} />
+        </div>
+      </section>
     </div>
   );
 };

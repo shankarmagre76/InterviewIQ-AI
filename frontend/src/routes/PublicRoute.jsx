@@ -3,7 +3,9 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Spinner } from '../components/ui/LoadingState';
 
-const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/auth/login', '/auth/register', '/auth/forgot-password'];
+const AUTH_PATHS = ['/login', '/register', '/forgot-password', '/reset-password', '/verify-email', '/auth/login', '/auth/register', '/auth/forgot-password'];
+
+
 
 export const PublicRoute = () => {
   const { isAuthenticated, loading } = useAuth();
