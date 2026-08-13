@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Edit2, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, Edit2 } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 
 export const SkillBadge = ({

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Code2, Plus, Search, Filter, Sparkles, AlertCircle, Edit2, X } from 'lucide-react';
+import { Code2, Plus, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
@@ -9,7 +9,6 @@ import { Modal } from '../ui/Modal';
 import { EmptyState } from '../ui/EmptyState';
 import { Alert } from '../ui/Alert';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { SkeletonCard } from '../ui/LoadingState';
 import { useToast } from '../../hooks/useToast';
 import { SkillBadge } from './SkillBadge';
 

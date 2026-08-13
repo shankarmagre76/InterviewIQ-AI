@@ -61,7 +61,7 @@ const PLATFORM_CONFIGS = [
 export const SocialLinksSection = ({
   socialLinks = {},
   onUpdateSocialLinks,
-  loading = false,
+  _loading = false,
   error = null,
   className = '',
 }) => {

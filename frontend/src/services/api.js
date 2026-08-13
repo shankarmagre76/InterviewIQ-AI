@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { storage } from '../utils/helpers';
-import { env } from '../config/env';
+import { storage } from '../utils/helpers.js';
+import { env } from '../config/env.js';
 
 const API_BASE_URL = env.API_BASE_URL;
 

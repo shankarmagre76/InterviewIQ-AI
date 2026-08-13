@@ -1,7 +1,5 @@
-import React from 'react';
-import { User, FileText, Globe, ExternalLink, Calendar, MapPin, Phone, Mail, Award, Code, Briefcase, GraduationCap } from 'lucide-react';
+import { User, FileText, Globe, ExternalLink, Award, Code } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '../ui/Card';
-import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 
 export const ProfileSummary = ({ profile, user, className = '' }) => {

@@ -2,10 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   User,
-  Edit3,
-  FileText,
   Settings,
-  Sparkles,
   Save,
   LayoutDashboard,
   GraduationCap,
@@ -13,7 +10,6 @@ import {
   Code2,
   FolderGit2,
   Award,
-  Share2,
 } from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -38,7 +34,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Modal } from '../../components/ui/Modal';
-import { Spinner, SkeletonCard } from '../../components/ui/LoadingState';
+import { SkeletonCard } from '../../components/ui/LoadingState';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 
