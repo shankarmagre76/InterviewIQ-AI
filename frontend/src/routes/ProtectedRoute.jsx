@@ -11,7 +11,7 @@ export const ProtectedRoute = () => {
     return (
       <div className="min-h-screen bg-[#080c14] flex flex-col items-center justify-center gap-3">
         <Spinner size="lg" />
-        <span className="text-xs text-slate-400 font-medium">Verifying Session...</span>
+        <span className="text-xs text-slate-400 font-medium">Verifying Session..</span>
       </div>
     );
   }
