@@ -14,6 +14,7 @@ import {
   LearningProgressCard,
   RecentActivityCard,
 } from '../../components/dashboard';
+import { ProfileCompletionCard } from '../../components/profile';
 
 // UI Feedback Primitives
 import { SkeletonCard, ChartSkeleton, ActivitySkeleton } from '../../components/ui/LoadingState';
@@ -109,8 +110,14 @@ export const DashboardPage = () => {
           <CareerReadinessCard careerReadiness={careerReadiness} />
         </div>
 
-        {/* Resume ATS & Interview Performance Stacked Cards (Right 1 Column) */}
+        {/* Profile Completion, Resume ATS & Interview Performance Stacked Cards (Right 1 Column) */}
         <div className="flex flex-col gap-6">
+          <ProfileCompletionCard
+            completion={profile?.completion || data?.profileCompletion || 0}
+            profile={profile}
+            compact={true}
+            onNavigateSection={() => navigate('/profile')}
+          />
           <ResumeAtsCard resume={resume} />
           <InterviewPerformanceCard interviews={interviews} />
         </div>
