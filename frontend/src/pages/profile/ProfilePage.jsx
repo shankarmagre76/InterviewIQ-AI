@@ -10,6 +10,10 @@ import {
   LayoutDashboard,
   GraduationCap,
   Briefcase,
+  Code2,
+  FolderGit2,
+  Award,
+  Share2,
 } from 'lucide-react';
 
 import { useAuth } from '../../hooks/useAuth';
@@ -24,6 +28,10 @@ import { ProfileCompletionCard } from '../../components/profile/ProfileCompletio
 import { PersonalInfoForm } from '../../components/profile/PersonalInfoForm';
 import { EducationSection } from '../../components/profile/EducationSection';
 import { ExperienceSection } from '../../components/profile/ExperienceSection';
+import { SkillsSection } from '../../components/profile/SkillsSection';
+import { ProjectsSection } from '../../components/profile/ProjectsSection';
+import { CertificationsSection } from '../../components/profile/CertificationsSection';
+import { SocialLinksSection } from '../../components/profile/SocialLinksSection';
 
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -48,15 +56,25 @@ export const ProfilePage = () => {
     refresh,
     updateProfile,
     uploadAvatar,
+    addSkill,
+    updateSkill,
+    deleteSkill,
     addEducation,
     updateEducation,
     deleteEducation,
     addExperience,
     updateExperience,
     deleteExperience,
+    addProject,
+    updateProject,
+    deleteProject,
+    addCertification,
+    updateCertification,
+    deleteCertification,
+    updateSocialLinks,
   } = useProfile({ autoFetch: true });
 
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'personal-info' | 'education' | 'experience'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'personal-info' | 'skills' | 'projects' | 'certifications' | 'experience' | 'education'
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -134,15 +152,21 @@ export const ProfilePage = () => {
       case 'resume':
         navigate('/resume');
         break;
+      case 'skills':
+        setActiveTab('skills');
+        break;
+      case 'projects':
+        setActiveTab('projects');
+        break;
+      case 'certifications':
+        setActiveTab('certifications');
+        break;
       case 'education':
         setActiveTab('education');
         break;
       case 'experience':
         setActiveTab('experience');
         break;
-      case 'skills':
-      case 'certifications':
-      case 'projects':
       default:
         setActiveTab('personal-info');
         break;
@@ -212,8 +236,8 @@ export const ProfilePage = () => {
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* Page Header */}
       <PageHeader
-        title="Career Profile & Work Experience"
-        description="Manage your professional identity, target career role, work history, education, and profile completion."
+        title="Career Profile & Certifications"
+        description="Manage your technical skills, software projects, certifications, work history, and profile completion."
         action={
           <Button
             variant="outline"
@@ -265,6 +289,45 @@ export const ProfilePage = () => {
 
         <button
           type="button"
+          onClick={() => setActiveTab('skills')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'skills'
+              ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+          }`}
+        >
+          <Code2 className="w-4 h-4 text-indigo-400" />
+          <span>Skills ({profile?.skills?.length || 0})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('projects')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'projects'
+              ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+          }`}
+        >
+          <FolderGit2 className="w-4 h-4 text-amber-400" />
+          <span>Projects ({profile?.projects?.length || 0})</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('certifications')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'certifications'
+              ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 shadow-sm'
+              : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+          }`}
+        >
+          <Award className="w-4 h-4 text-purple-400" />
+          <span>Certifications ({profile?.certifications?.length || 0})</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('experience')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'experience'
@@ -301,6 +364,40 @@ export const ProfilePage = () => {
             <div className="lg:col-span-2 space-y-6">
               <ProfileSummary profile={profile} user={user} />
 
+              {/* Social Links Section */}
+              <SocialLinksSection
+                socialLinks={profile?.socialLinks || {}}
+                onUpdateSocialLinks={updateSocialLinks}
+                loading={actionLoading}
+              />
+
+              {/* Certifications Section */}
+              <CertificationsSection
+                certificationsList={profile?.certifications || []}
+                onAddCertification={addCertification}
+                onUpdateCertification={updateCertification}
+                onDeleteCertification={deleteCertification}
+                loading={actionLoading}
+              />
+
+              {/* Projects Section */}
+              <ProjectsSection
+                projectsList={profile?.projects || []}
+                onAddProject={addProject}
+                onUpdateProject={updateProject}
+                onDeleteProject={deleteProject}
+                loading={actionLoading}
+              />
+
+              {/* Skills Section */}
+              <SkillsSection
+                skillsList={profile?.skills || []}
+                onAddSkill={addSkill}
+                onUpdateSkill={updateSkill}
+                onDeleteSkill={deleteSkill}
+                loading={actionLoading}
+              />
+
               {/* Work Experience Section */}
               <ExperienceSection
                 experienceList={profile?.experience || []}
@@ -324,7 +421,7 @@ export const ProfilePage = () => {
               <ProfileCompletionCard
                 completion={completion}
                 profile={profile}
-                onEditProfile={() => setActiveTab('personal-info')}
+                onNavigateSection={setActiveTab}
               />
 
               {/* Quick Action Shortcuts Card */}
@@ -334,6 +431,33 @@ export const ProfilePage = () => {
                   <CardDescription>Direct candidate section access</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-2.5">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between"
+                    onClick={() => setActiveTab('certifications')}
+                    leftIcon={<Award className="w-4 h-4 text-purple-400" />}
+                  >
+                    Manage Certifications ({profile?.certifications?.length || 0})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between"
+                    onClick={() => setActiveTab('projects')}
+                    leftIcon={<FolderGit2 className="w-4 h-4 text-amber-400" />}
+                  >
+                    Manage Projects ({profile?.projects?.length || 0})
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-between"
+                    onClick={() => setActiveTab('skills')}
+                    leftIcon={<Code2 className="w-4 h-4 text-indigo-400" />}
+                  >
+                    Manage Technical Skills ({profile?.skills?.length || 0})
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -352,24 +476,6 @@ export const ProfilePage = () => {
                   >
                     Manage Education ({profile?.education?.length || 0})
                   </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-between"
-                    onClick={() => setActiveTab('personal-info')}
-                    leftIcon={<User className="w-4 h-4 text-indigo-400" />}
-                  >
-                    Edit Personal Info
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-between"
-                    onClick={() => navigate('/resume')}
-                    leftIcon={<FileText className="w-4 h-4 text-emerald-400" />}
-                  >
-                    Manage Resume & Documents
-                  </Button>
                 </CardContent>
               </Card>
             </div>
@@ -384,8 +490,46 @@ export const ProfilePage = () => {
             onProfileUpdated={refresh}
           />
         </div>
+      ) : activeTab === 'skills' ? (
+        /* Tab 3: Skills Management (F4.6) */
+        <div className="max-w-5xl mx-auto">
+          <SkillsSection
+            skillsList={profile?.skills || []}
+            onAddSkill={addSkill}
+            onUpdateSkill={updateSkill}
+            onDeleteSkill={deleteSkill}
+            loading={actionLoading}
+          />
+        </div>
+      ) : activeTab === 'projects' ? (
+        /* Tab 4: Project Management (F4.7) */
+        <div className="max-w-5xl mx-auto">
+          <ProjectsSection
+            projectsList={profile?.projects || []}
+            onAddProject={addProject}
+            onUpdateProject={updateProject}
+            onDeleteProject={deleteProject}
+            loading={actionLoading}
+          />
+        </div>
+      ) : activeTab === 'certifications' ? (
+        /* Tab 5: Certifications Management (F4.8) */
+        <div className="max-w-5xl mx-auto space-y-6">
+          <CertificationsSection
+            certificationsList={profile?.certifications || []}
+            onAddCertification={addCertification}
+            onUpdateCertification={updateCertification}
+            onDeleteCertification={deleteCertification}
+            loading={actionLoading}
+          />
+          <SocialLinksSection
+            socialLinks={profile?.socialLinks || {}}
+            onUpdateSocialLinks={updateSocialLinks}
+            loading={actionLoading}
+          />
+        </div>
       ) : activeTab === 'experience' ? (
-        /* Tab 3: Experience Management (F4.5) */
+        /* Tab 6: Experience Management (F4.5) */
         <div className="max-w-5xl mx-auto">
           <ExperienceSection
             experienceList={profile?.experience || []}
@@ -396,7 +540,7 @@ export const ProfilePage = () => {
           />
         </div>
       ) : (
-        /* Tab 4: Education Management (F4.4) */
+        /* Tab 7: Education Management (F4.4) */
         <div className="max-w-5xl mx-auto">
           <EducationSection
             educationList={profile?.education || []}

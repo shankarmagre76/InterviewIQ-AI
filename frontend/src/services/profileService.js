@@ -200,6 +200,102 @@ export const profileService = {
   },
 
   /* ==========================================================================
+     Projects Sub-resource API Methods
+     ========================================================================== */
+
+  /**
+   * Get all project records of logged-in user profile
+   * GET /api/v1/profile/projects
+   * @returns {Promise<Object>} ApiResponse with projects array
+   */
+  async getProjects() {
+    const response = await api.get(API_ENDPOINTS.PROFILE.PROJECTS);
+    return response.data;
+  },
+
+  /**
+   * Add a new project record to user profile
+   * POST /api/v1/profile/projects
+   * @param {Object} projectData - { title, description?, technologies?, role?, startDate?, endDate?, current?, githubUrl?, liveUrl?, projectType? }
+   * @returns {Promise<Object>} ApiResponse with updated projects array
+   */
+  async addProject(projectData) {
+    const response = await api.post(API_ENDPOINTS.PROFILE.PROJECTS, projectData);
+    return response.data;
+  },
+
+  /**
+   * Update an existing project record in user profile by project ID
+   * PUT /api/v1/profile/projects/:id
+   * @param {string} id - Project MongoDB ObjectId
+   * @param {Object} projectData
+   * @returns {Promise<Object>} ApiResponse with updated project subdocument
+   */
+  async updateProject(id, projectData) {
+    const response = await api.put(API_ENDPOINTS.PROFILE.PROJECT_BY_ID(id), projectData);
+    return response.data;
+  },
+
+  /**
+   * Delete a project record from user profile by project ID
+   * DELETE /api/v1/profile/projects/:id
+   * @param {string} id - Project MongoDB ObjectId
+   * @returns {Promise<Object>} ApiResponse with null data
+   */
+  async deleteProject(id) {
+    const response = await api.delete(API_ENDPOINTS.PROFILE.PROJECT_BY_ID(id));
+    return response.data;
+  },
+
+  /* ==========================================================================
+     Certifications Sub-resource API Methods
+     ========================================================================== */
+
+  /**
+   * Get all certification records of logged-in user profile
+   * GET /api/v1/profile/certifications
+   * @returns {Promise<Object>} ApiResponse with certifications array
+   */
+  async getCertifications() {
+    const response = await api.get(API_ENDPOINTS.PROFILE.CERTIFICATIONS);
+    return response.data;
+  },
+
+  /**
+   * Add a new certification record to user profile
+   * POST /api/v1/profile/certifications
+   * @param {Object} certData - { title, issuingOrganization, issueDate?, expiryDate?, doesNotExpire?, credentialId?, credentialUrl? }
+   * @returns {Promise<Object>} ApiResponse with updated certifications array
+   */
+  async addCertification(certData) {
+    const response = await api.post(API_ENDPOINTS.PROFILE.CERTIFICATIONS, certData);
+    return response.data;
+  },
+
+  /**
+   * Update an existing certification record in user profile by certification ID
+   * PUT /api/v1/profile/certifications/:id
+   * @param {string} id - Certification MongoDB ObjectId
+   * @param {Object} certData
+   * @returns {Promise<Object>} ApiResponse with updated certification subdocument
+   */
+  async updateCertification(id, certData) {
+    const response = await api.put(API_ENDPOINTS.PROFILE.CERTIFICATION_BY_ID(id), certData);
+    return response.data;
+  },
+
+  /**
+   * Delete a certification record from user profile by certification ID
+   * DELETE /api/v1/profile/certifications/:id
+   * @param {string} id - Certification MongoDB ObjectId
+   * @returns {Promise<Object>} ApiResponse with null data
+   */
+  async deleteCertification(id) {
+    const response = await api.delete(API_ENDPOINTS.PROFILE.CERTIFICATION_BY_ID(id));
+    return response.data;
+  },
+
+  /* ==========================================================================
      Social Links API Methods
      ========================================================================== */
 

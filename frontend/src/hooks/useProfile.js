@@ -132,6 +132,14 @@ export const useProfile = (options = {}) => {
   const updateExperience = (id, exp) => runAction(() => profileService.updateExperience(id, exp));
   const deleteExperience = (id) => runAction(() => profileService.deleteExperience(id));
 
+  const addProject = (proj) => runAction(() => profileService.addProject(proj));
+  const updateProject = (id, proj) => runAction(() => profileService.updateProject(id, proj));
+  const deleteProject = (id) => runAction(() => profileService.deleteProject(id));
+
+  const addCertification = (cert) => runAction(() => profileService.addCertification(cert));
+  const updateCertification = (id, cert) => runAction(() => profileService.updateCertification(id, cert));
+  const deleteCertification = (id) => runAction(() => profileService.deleteCertification(id));
+
   const updateSocialLinks = (social) => runAction(() => profileService.updateSocialLinks(social));
 
   const uploadResume = (file) => runAction(() => profileService.uploadResume(file));
@@ -162,6 +170,12 @@ export const useProfile = (options = {}) => {
     addExperience,
     updateExperience,
     deleteExperience,
+    addProject,
+    updateProject,
+    deleteProject,
+    addCertification,
+    updateCertification,
+    deleteCertification,
     updateSocialLinks,
     uploadResume,
     deleteResume,
