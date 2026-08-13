@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Video, Award, ArrowRight, Zap } from 'lucide-react';
+import { Video, Award, ArrowRight, Zap, Play } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { EmptyState } from '../ui/EmptyState';
 
 export const InterviewPerformanceCard = ({ interviews = {} }) => {
   const navigate = useNavigate();
@@ -13,6 +14,47 @@ export const InterviewPerformanceCard = ({ interviews = {} }) => {
   const avgScore = interviews?.averageScore ?? 0;
   const bestScore = interviews?.bestScore ?? 0;
   const latestScore = interviews?.latestScore ?? 0;
+
+  // Empty State: No interviews completed yet
+  if (completed === 0 && total === 0) {
+    return (
+      <Card variant="glass" className="w-full flex flex-col justify-between">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle as="h3" className="flex items-center gap-2">
+              <Video className="w-5 h-5 text-cyan-400" />
+              Interview Performance
+            </CardTitle>
+            <Badge variant="neutral" style="soft" size="sm">
+              0 Completed
+            </Badge>
+          </div>
+          <CardDescription>AI mock technical & behavioral evaluations.</CardDescription>
+        </CardHeader>
+
+        <CardContent className="py-4">
+          <EmptyState
+            icon={<Video className="w-8 h-8 text-cyan-400" />}
+            title="No Interviews Yet"
+            description="Start your first AI mock interview."
+            className="py-4 border-0 bg-transparent p-0"
+          />
+        </CardContent>
+
+        <CardFooter>
+          <Button
+            variant="primary"
+            size="sm"
+            fullWidth
+            onClick={() => navigate('/interviews')}
+            leftIcon={<Play className="w-4 h-4" />}
+          >
+            Start AI Interview
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card variant="glass" className="w-full flex flex-col justify-between">

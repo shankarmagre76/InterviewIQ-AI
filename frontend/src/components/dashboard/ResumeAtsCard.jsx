@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FileText, TrendingUp, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { FileText, TrendingUp, Sparkles, ArrowRight, Upload } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { EmptyState } from '../ui/EmptyState';
 
 export const ResumeAtsCard = ({ resume = {} }) => {
   const navigate = useNavigate();
@@ -13,6 +14,47 @@ export const ResumeAtsCard = ({ resume = {} }) => {
   const previousScore = resume?.previousATSScore ?? 0;
   const improvement = resume?.scoreImprovement ?? (score > 0 && previousScore > 0 ? score - previousScore : 0);
   const count = resume?.analysisCount ?? 0;
+
+  // Empty State: No active resume or scans recorded
+  if (!hasResume && count === 0) {
+    return (
+      <Card variant="glass" className="w-full flex flex-col justify-between">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle as="h3" className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-indigo-400" />
+              Resume ATS Score
+            </CardTitle>
+            <Badge variant="neutral" style="soft" size="sm">
+              No Resume
+            </Badge>
+          </div>
+          <CardDescription>AI keyword matching & format analysis.</CardDescription>
+        </CardHeader>
+
+        <CardContent className="py-4">
+          <EmptyState
+            icon={<FileText className="w-8 h-8 text-indigo-400" />}
+            title="No Resume Scanned"
+            description="Upload your resume to calculate your ATS score."
+            className="py-4 border-0 bg-transparent p-0"
+          />
+        </CardContent>
+
+        <CardFooter>
+          <Button
+            variant="primary"
+            size="sm"
+            fullWidth
+            onClick={() => navigate('/resumes')}
+            leftIcon={<Upload className="w-4 h-4" />}
+          >
+            Upload Resume
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card variant="glass" className="w-full flex flex-col justify-between">

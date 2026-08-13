@@ -1,9 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Briefcase, Send, Clock, CalendarCheck, CheckCircle2, ArrowRight, Percent } from 'lucide-react';
+import { Briefcase, Send, Clock, CalendarCheck, CheckCircle2, ArrowRight, Percent, Search } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
+import { EmptyState } from '../ui/EmptyState';
 
 export const ApplicationOverviewCard = ({ applications = {} }) => {
   const navigate = useNavigate();
@@ -15,6 +16,47 @@ export const ApplicationOverviewCard = ({ applications = {} }) => {
   const offered = applications?.offered ?? 0;
   const interviewRate = applications?.interviewConversionRate ?? 0;
   const offerRate = applications?.offerConversionRate ?? 0;
+
+  // Empty State: No applications tracked yet
+  if (total === 0) {
+    return (
+      <Card variant="glass" className="w-full flex flex-col justify-between">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle as="h3" className="flex items-center gap-2">
+              <Briefcase className="w-5 h-5 text-emerald-400" />
+              Job Applications
+            </CardTitle>
+            <Badge variant="neutral" style="soft" size="sm">
+              0 Active
+            </Badge>
+          </div>
+          <CardDescription>Funnel conversion & application pipeline breakdown.</CardDescription>
+        </CardHeader>
+
+        <CardContent className="py-4">
+          <EmptyState
+            icon={<Briefcase className="w-8 h-8 text-emerald-400" />}
+            title="No Applications Tracked"
+            description="Explore jobs and start applying."
+            className="py-4 border-0 bg-transparent p-0"
+          />
+        </CardContent>
+
+        <CardFooter>
+          <Button
+            variant="primary"
+            size="sm"
+            fullWidth
+            onClick={() => navigate('/jobs')}
+            leftIcon={<Search className="w-4 h-4" />}
+          >
+            Browse Jobs
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
 
   return (
     <Card variant="glass" className="w-full flex flex-col justify-between">

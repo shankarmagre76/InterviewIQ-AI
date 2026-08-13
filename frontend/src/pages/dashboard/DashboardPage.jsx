@@ -16,12 +16,12 @@ import {
 } from '../../components/dashboard';
 
 // UI Feedback Primitives
-import { SkeletonCard } from '../../components/ui/LoadingState';
+import { SkeletonCard, ChartSkeleton, ActivitySkeleton } from '../../components/ui/LoadingState';
 import { ErrorState } from '../../components/ui/ErrorState';
 
 /**
  * Main Authenticated Candidate Dashboard Page
- * Integrates all 8 dashboard sections backed by useDashboard() hook.
+ * Integrates all dashboard sections backed by useDashboard() hook with robust loading, empty, & error states.
  */
 export const DashboardPage = () => {
   const navigate = useNavigate();
@@ -32,32 +32,47 @@ export const DashboardPage = () => {
     navigate('/interviews');
   };
 
-  // Handle Loading Skeleton State
+  // Handle Loading Skeleton Layout (Avoids layout shifts)
   if (loading && !data) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 sm:space-y-8 pb-10">
+        {/* Header Skeleton */}
         <div className="w-full h-44 rounded-3xl animate-pulse bg-slate-900/80 border border-slate-800" />
+
+        {/* Quick Actions Grid Skeleton */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
         </div>
+
+        {/* Primary Row Skeletons */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <SkeletonCard className="lg:col-span-2" />
+          <ChartSkeleton height={280} className="lg:col-span-2" />
+          <div className="flex flex-col gap-6">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </div>
+
+        {/* Operational Row Skeletons */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <SkeletonCard />
+          <SkeletonCard />
+          <ActivitySkeleton count={4} />
         </div>
       </div>
     );
   }
 
-  // Handle API Error State
+  // Handle API Error State (Sanitizes raw API stack traces)
   if (error && !data) {
     return (
-      <div className="py-8">
+      <div className="py-12 max-w-xl mx-auto">
         <ErrorState
           title="Dashboard Analytics Unavailable"
-          message={error}
+          message={error || 'Unable to load dashboard data. Try again.'}
           onRetry={refresh}
         />
       </div>
