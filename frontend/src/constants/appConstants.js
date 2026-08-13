@@ -33,14 +33,14 @@ export const API_ENDPOINTS = {
   },
 
   RESUME: {
-    BASE: '/resumes',
-    HISTORY: '/resumes/history',
-    BY_ID: (id) => `/resumes/${id}`,
-    ANALYZE: '/resumes/analyze',
-    ANALYSIS: '/resumes/analysis',
-    ANALYSIS_LATEST: '/resumes/analysis/latest',
-    ANALYSIS_HISTORY: '/resumes/analysis/history',
-    ANALYSIS_BY_ID: (id) => `/resumes/analysis/${id}`,
+    BASE: '/profile/resume',
+    HISTORY: '/profile/resume/history',
+    BY_ID: (id) => `/profile/resume/${id}`,
+    ANALYZE: '/profile/resume/analyze',
+    ANALYSIS: '/profile/resume/analysis',
+    ANALYSIS_LATEST: '/profile/resume/analysis/latest',
+    ANALYSIS_HISTORY: '/profile/resume/analysis/history',
+    ANALYSIS_BY_ID: (id) => `/profile/resume/analysis/${id}`,
   },
 
   COMPANY: {
