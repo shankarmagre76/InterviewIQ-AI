@@ -19,7 +19,13 @@ export const parseApiError = (error) => {
   if (data?.message && typeof data.message === 'string') {
     const msg = data.message;
     // Filter out raw stack traces or internal server error strings
-    if (msg.includes('CastError') || msg.includes('MongoError') || msg.includes('ValidationError:')) {
+    if (
+      msg.includes('CastError') ||
+      msg.includes('MongoError') ||
+      msg.includes('ValidationError:') ||
+      msg.includes('SyntaxError') ||
+      msg.includes('at ')
+    ) {
       return 'Invalid request data provided. Please check your inputs.';
     }
     return msg;
@@ -27,19 +33,28 @@ export const parseApiError = (error) => {
 
   // 4. Standard HTTP Status Fallbacks
   if (status === 401) {
-    return 'Invalid email or password. Please double-check your credentials.';
+    return 'Session expired or unauthorized. Please log in again.';
   }
   if (status === 403) {
     return 'Access denied. You do not have permission to perform this action.';
   }
   if (status === 404) {
-    return 'The requested resource or endpoint was not found.';
+    return 'The requested resource or document was not found.';
   }
   if (status === 409) {
-    return 'An account with this email address already exists.';
+    return 'A conflict occurred with this resource. Please refresh and try again.';
+  }
+  if (status === 413) {
+    return 'File size exceeds maximum allowed limit of 5MB. Please upload a smaller PDF file.';
+  }
+  if (status === 422) {
+    return 'Unprocessable PDF document. Please ensure your PDF contains extractable text.';
+  }
+  if (status === 429) {
+    return 'AI service rate limit reached. Please wait a few moments before trying again.';
   }
   if (status >= 500) {
-    return 'Authentication server error. Please try again later.';
+    return 'Server or AI service error. Please try again later.';
   }
 
   if (error.message && typeof error.message === 'string' && !error.message.includes('Request failed with status code')) {
