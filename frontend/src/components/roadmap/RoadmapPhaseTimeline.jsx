@@ -4,7 +4,6 @@ import {
   Clock,
   ArrowDown,
   Layers,
-  Sparkles,
   ChevronDown,
   ChevronUp,
   Tag,
@@ -34,7 +33,7 @@ const getPriorityBadgeVariant = (priority) => {
 /**
  * RoadmapPhaseTimeline Component
  * Renders a visual connected vertical node timeline showing learning phases.
- * Differentiates Completed (✓), In Progress (●), and Not Started (○) phases.
+ * Fully keyboard accessible (Enter/Space), ARIA expanded states, and mobile responsive.
  */
 export const RoadmapPhaseTimeline = ({
   phases = [],
@@ -60,7 +59,7 @@ export const RoadmapPhaseTimeline = ({
     <div className={`space-y-6 ${className}`.trim()}>
       <div className="flex items-center justify-between border-b border-slate-800 pb-3">
         <h3 className="text-base font-extrabold text-white flex items-center gap-2">
-          <Layers className="w-4 h-4 text-indigo-400" />
+          <Layers className="w-4 h-4 text-indigo-400" aria-hidden="true" />
           Learning Roadmap Curriculum ({phases.length} Phases)
         </h3>
         <span className="text-xs text-slate-400 font-mono">Sequential Path</span>
@@ -85,12 +84,17 @@ export const RoadmapPhaseTimeline = ({
               
               {/* Connector Line (except for last item) */}
               {!isLast && (
-                <div className="absolute left-[23px] top-12 bottom--6 w-0.5 bg-slate-800 z-0" />
+                <div className="absolute left-[23px] sm:left-[27px] top-12 bottom--6 w-0.5 bg-slate-800 z-0" aria-hidden="true" />
               )}
 
               {/* Node Card */}
               <div
-                className={`relative z-10 rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden ${
+                role="button"
+                tabIndex={0}
+                aria-expanded={isExpanded}
+                aria-controls={`phase-panel-${phaseId}`}
+                aria-label={`Phase ${phase.order || index + 1}: ${phase.title}. ${isCompleted ? 'Completed' : isInProgress ? 'In Progress' : 'Not Started'}`}
+                className={`relative z-10 rounded-2xl border transition-all duration-200 cursor-pointer overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950 ${
                   isCompleted
                     ? 'bg-slate-900/80 border-emerald-500/30 hover:border-emerald-500/50'
                     : isInProgress
@@ -101,24 +105,34 @@ export const RoadmapPhaseTimeline = ({
                   toggleExpand(phaseId);
                   onSelectPhase(phase);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    toggleExpand(phaseId);
+                    onSelectPhase(phase);
+                  }
+                }}
               >
                 
                 {/* Phase Main Row */}
-                <div className="p-4 sm:p-5 flex items-start gap-4">
+                <div className="p-4 sm:p-5 flex items-start gap-3 sm:gap-4">
                   
                   {/* Phase Status Icon Node */}
                   <div className="shrink-0 mt-0.5">
                     {isCompleted ? (
                       <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-sm">
-                        <CheckCircle2 className="w-5 h-5" />
+                        <CheckCircle2 className="w-5 h-5" aria-hidden="true" />
+                        <span className="sr-only">Phase Completed</span>
                       </div>
                     ) : isInProgress ? (
-                      <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/50 flex items-center justify-center text-indigo-300 animate-pulse shadow-md shadow-indigo-500/20">
-                        <CircleDot className="w-5 h-5 text-indigo-400" />
+                      <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/50 flex items-center justify-center text-indigo-300 shadow-md shadow-indigo-500/20">
+                        <CircleDot className="w-5 h-5 text-indigo-400" aria-hidden="true" />
+                        <span className="sr-only">Phase In Progress</span>
                       </div>
                     ) : (
                       <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500">
-                        <Circle className="w-5 h-5" />
+                        <Circle className="w-5 h-5" aria-hidden="true" />
+                        <span className="sr-only">Phase Not Started</span>
                       </div>
                     )}
                   </div>
@@ -179,12 +193,12 @@ export const RoadmapPhaseTimeline = ({
 
                       <div className="flex items-center justify-end gap-3 text-xs text-slate-400">
                         <span className="flex items-center gap-1">
-                          <Clock className="w-3.5 h-3.5 text-cyan-400" /> {phase.estimatedDays || 7} Days
+                          <Clock className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" /> {phase.estimatedDays || 7} Days
                         </span>
                         {isExpanded ? (
-                          <ChevronUp className="w-4 h-4 text-slate-400" />
+                          <ChevronUp className="w-4 h-4 text-slate-400" aria-hidden="true" />
                         ) : (
-                          <ChevronDown className="w-4 h-4 text-slate-400" />
+                          <ChevronDown className="w-4 h-4 text-slate-400" aria-hidden="true" />
                         )}
                       </div>
                     </div>
@@ -197,7 +211,7 @@ export const RoadmapPhaseTimeline = ({
                             key={i}
                             className="px-2 py-0.5 rounded-md bg-slate-900/90 border border-slate-800 text-[10px] font-medium text-slate-300 flex items-center gap-1"
                           >
-                            <Tag className="w-2.5 h-2.5 text-indigo-400" /> {sk}
+                            <Tag className="w-2.5 h-2.5 text-indigo-400" aria-hidden="true" /> {sk}
                           </span>
                         ))}
                       </div>
@@ -209,7 +223,10 @@ export const RoadmapPhaseTimeline = ({
 
                 {/* Expandable Task Detail Accordion */}
                 {isExpanded && (
-                  <div className="px-5 pb-5 pt-2 border-t border-slate-800/80 bg-slate-950/40 space-y-3">
+                  <div
+                    id={`phase-panel-${phaseId}`}
+                    className="px-4 sm:px-5 pb-5 pt-2 border-t border-slate-800/80 bg-slate-950/40 space-y-3"
+                  >
                     <span className="text-xs font-bold text-indigo-300 uppercase tracking-wider block">
                       Phase Tasks ({phaseTasks.length})
                     </span>
@@ -227,9 +244,9 @@ export const RoadmapPhaseTimeline = ({
                             >
                               <div className="flex items-center gap-2.5 min-w-0">
                                 {isTaskDone ? (
-                                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" aria-hidden="true" />
                                 ) : (
-                                  <Circle className="w-4 h-4 text-slate-500 shrink-0" />
+                                  <Circle className="w-4 h-4 text-slate-500 shrink-0" aria-hidden="true" />
                                 )}
                                 <span className={`truncate font-medium ${isTaskDone ? 'line-through text-slate-500' : 'text-slate-200'}`}>
                                   {t.title}
@@ -251,8 +268,8 @@ export const RoadmapPhaseTimeline = ({
 
               {/* Connecting Down Arrow (between nodes) */}
               {!isLast && (
-                <div className="flex justify-center my-2 text-slate-600">
-                  <ArrowDown className="w-4 h-4 animate-bounce" />
+                <div className="flex justify-center my-2 text-slate-600" aria-hidden="true">
+                  <ArrowDown className="w-4 h-4" />
                 </div>
               )}
 

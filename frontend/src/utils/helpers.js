@@ -64,6 +64,24 @@ export const parseApiError = (error) => {
   return 'An unexpected error occurred. Please try again.';
 };
 
+/**
+ * Format ISO date string into human readable format (e.g., "Aug 15, 2026")
+ */
+export const formatDate = (dateString) => {
+  if (!dateString) return 'N/A';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return 'N/A';
+  }
+};
+
 export const storage = {
   get: (key, defaultValue = null) => {
     try {

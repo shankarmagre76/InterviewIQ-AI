@@ -5,42 +5,22 @@ import {
   SkipForward,
   RotateCcw,
   Clock,
-  ExternalLink,
   Tag,
-  BookOpen,
-  FileText,
-  Video,
-  Code
+  BookOpen
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { TaskStatusBadge } from './TaskStatusBadge';
 import { TaskTypeBadge } from './TaskTypeBadge';
+import { TaskResourcesList } from './TaskResourcesList';
 import { roadmapService } from '../../services/roadmapService';
-
-/**
- * Get Resource Type Icon
- */
-const getResourceIcon = (type) => {
-  switch (String(type || '').toUpperCase()) {
-    case 'VIDEO':
-      return <Video className="w-3.5 h-3.5 text-purple-400" />;
-    case 'DOCUMENTATION':
-    case 'ARTICLE':
-      return <FileText className="w-3.5 h-3.5 text-cyan-400" />;
-    case 'REPOSITORY':
-    case 'COURSE':
-      return <Code className="w-3.5 h-3.5 text-emerald-400" />;
-    default:
-      return <BookOpen className="w-3.5 h-3.5 text-indigo-400" />;
-  }
-};
 
 /**
  * LearningTaskCard Component
  * Displays individual learning task attributes, resources, and action controls
- * (Start, Complete, Skip, Reopen) with single-task loading locks.
+ * (Start, Complete, Skip, Reopen) with single-task loading locks, keyboard focus rings,
+ * screen-reader friendly ARIA attributes, and responsive layout.
  */
 export const LearningTaskCard = ({
   task = {},
@@ -89,13 +69,14 @@ export const LearningTaskCard = ({
   return (
     <Card
       variant="glass"
-      className={`w-full flex flex-col justify-between transition-all duration-200 ${
+      className={`w-full flex flex-col justify-between transition-all duration-200 focus-within:ring-2 focus-within:ring-indigo-500/50 ${
         isCompleted
           ? 'border-emerald-500/30 bg-slate-950/70'
           : isInProgress
           ? 'border-indigo-500/40 bg-slate-900/90 shadow-md shadow-indigo-500/10'
           : 'border-slate-800 bg-slate-900/60'
       } ${className}`.trim()}
+      aria-labelledby={`task-title-${taskId}`}
     >
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -103,21 +84,26 @@ export const LearningTaskCard = ({
           <div className="flex items-center gap-2">
             <TaskTypeBadge type={task.type} size="sm" />
             <TaskStatusBadge status={task.status} size="sm" />
+            <span className="sr-only">Task Status: {status}</span>
           </div>
 
           {/* Priority & Duration */}
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <Badge variant="outline" size="sm">
-              {task.priority || 'MEDIUM'}
+              <span className="sr-only">Priority Level:</span> {task.priority || 'MEDIUM'}
             </Badge>
-            <span className="flex items-center gap-1 font-mono text-[11px]">
-              <Clock className="w-3.5 h-3.5 text-cyan-400" /> {task.estimatedMinutes || 30} mins
+            <span className="flex items-center gap-1 font-mono text-[11px]" aria-label={`Estimated duration ${task.estimatedMinutes || 30} minutes`}>
+              <Clock className="w-3.5 h-3.5 text-cyan-400" aria-hidden="true" /> {task.estimatedMinutes || 30} mins
             </span>
           </div>
         </div>
 
         {/* Task Title */}
-        <CardTitle as="h4" className={`text-base font-bold text-white pt-2 ${isCompleted ? 'line-through text-slate-400' : ''}`}>
+        <CardTitle
+          id={`task-title-${taskId}`}
+          as="h4"
+          className={`text-base font-bold text-white pt-2 leading-snug ${isCompleted ? 'line-through text-slate-400' : ''}`}
+        >
           {task.title}
         </CardTitle>
       </CardHeader>
@@ -130,54 +116,30 @@ export const LearningTaskCard = ({
 
         {/* Error Alert if action failed */}
         {error && (
-          <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs">
-            {error}
+          <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center justify-between" role="alert">
+            <span>{error}</span>
           </div>
         )}
 
         {/* Skills Tags */}
         {task.skills && task.skills.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1.5 pt-1">
+          <div className="flex flex-wrap items-center gap-1.5 pt-1" aria-label="Skills trained in this task">
             {task.skills.map((sk, idx) => (
               <span
                 key={idx}
                 className="px-2 py-0.5 rounded-md bg-slate-950/80 border border-slate-800 text-[10px] text-slate-300 flex items-center gap-1 font-mono"
               >
-                <Tag className="w-2.5 h-2.5 text-indigo-400" /> {sk}
+                <Tag className="w-2.5 h-2.5 text-indigo-400" aria-hidden="true" /> {sk}
               </span>
             ))}
           </div>
         )}
 
         {/* External Resources Section */}
-        {task.resources && task.resources.length > 0 && (
-          <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-              Learning Resources ({task.resources.length})
-            </span>
-
-            <div className="space-y-1.5">
-              {task.resources.map((res, rIdx) => (
-                <a
-                  key={rIdx}
-                  href={res.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between p-2 rounded-lg bg-slate-900/80 hover:bg-slate-900 border border-slate-800 text-xs text-indigo-300 hover:text-indigo-200 transition-colors group"
-                >
-                  <span className="flex items-center gap-2 truncate">
-                    {getResourceIcon(res.type)}
-                    <span className="truncate">{res.title}</span>
-                  </span>
-                  <ExternalLink className="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 shrink-0" />
-                </a>
-              ))}
-            </div>
-          </div>
-        )}
+        <TaskResourcesList resources={task.resources} />
       </CardContent>
 
-      <CardFooter className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+      <CardFooter className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
         
         {/* Left Secondary Action: Skip / Reopen */}
         <div>
@@ -188,7 +150,9 @@ export const LearningTaskCard = ({
               onClick={() => handleAction('reopen')}
               isLoading={activeAction === 'reopen'}
               disabled={Boolean(activeAction)}
-              leftIcon={<RotateCcw className="w-3.5 h-3.5 text-slate-400" />}
+              leftIcon={<RotateCcw className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />}
+              aria-label={`Reopen task: ${task.title}`}
+              className="min-h-[38px] px-3 focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               Reopen
             </Button>
@@ -199,8 +163,9 @@ export const LearningTaskCard = ({
               onClick={() => handleAction('skip')}
               isLoading={activeAction === 'skip'}
               disabled={Boolean(activeAction)}
-              leftIcon={<SkipForward className="w-3.5 h-3.5 text-slate-400" />}
-              className="text-slate-400 hover:text-slate-200"
+              leftIcon={<SkipForward className="w-3.5 h-3.5 text-slate-400" aria-hidden="true" />}
+              aria-label={`Skip task: ${task.title}`}
+              className="text-slate-400 hover:text-slate-200 min-h-[38px] px-3 focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               Skip
             </Button>
@@ -216,7 +181,9 @@ export const LearningTaskCard = ({
               onClick={() => handleAction('start')}
               isLoading={activeAction === 'start'}
               disabled={Boolean(activeAction)}
-              leftIcon={<Play className="w-3.5 h-3.5 fill-indigo-200" />}
+              leftIcon={<Play className="w-3.5 h-3.5 fill-indigo-200" aria-hidden="true" />}
+              aria-label={`Start learning task: ${task.title}`}
+              className="min-h-[38px] px-4 shadow-md shadow-indigo-500/20 focus-visible:ring-2 focus-visible:ring-indigo-500"
             >
               Start Task
             </Button>
@@ -229,7 +196,9 @@ export const LearningTaskCard = ({
               onClick={() => handleAction('complete')}
               isLoading={activeAction === 'complete'}
               disabled={Boolean(activeAction)}
-              leftIcon={<CheckCircle2 className="w-4 h-4" />}
+              leftIcon={<CheckCircle2 className="w-4 h-4" aria-hidden="true" />}
+              aria-label={`Mark task as complete: ${task.title}`}
+              className="min-h-[38px] px-4 shadow-md shadow-emerald-500/20 focus-visible:ring-2 focus-visible:ring-emerald-500"
             >
               Complete Task
             </Button>
@@ -237,7 +206,7 @@ export const LearningTaskCard = ({
 
           {isCompleted && (
             <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <CheckCircle2 className="w-4 h-4" /> Task Completed
+              <CheckCircle2 className="w-4 h-4" aria-hidden="true" /> Task Completed
             </span>
           )}
         </div>

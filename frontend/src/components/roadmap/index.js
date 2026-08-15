@@ -6,3 +6,5 @@ export { RoadmapPhaseTimeline } from './RoadmapPhaseTimeline';
 export { TaskStatusBadge } from './TaskStatusBadge';
 export { TaskTypeBadge } from './TaskTypeBadge';
 export { LearningTaskCard } from './LearningTaskCard';
+export { RoadmapProgressTracker } from './RoadmapProgressTracker';
+export { TaskResourcesList } from './TaskResourcesList';

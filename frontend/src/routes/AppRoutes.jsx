@@ -43,6 +43,8 @@ import InterviewLobbyPage from '../pages/interviews/InterviewLobbyPage';
 import InterviewSessionPage from '../pages/interviews/InterviewSessionPage';
 import InterviewResultPage from '../pages/interviews/InterviewResultPage';
 import RoadmapPage from '../pages/roadmap/RoadmapPage';
+import RoadmapDetailsPage from '../pages/roadmap/RoadmapDetailsPage';
+import RoadmapHistoryPage from '../pages/roadmap/RoadmapHistoryPage';
 import NotificationsPage from '../pages/notifications/NotificationsPage';
 import SettingsPage from '../pages/settings/SettingsPage';
 import DesignSystemPage from '../pages/DesignSystemPage';
@@ -105,6 +107,8 @@ export const AppRoutes = () => {
           <Route path="/interviews/:id" element={<InterviewSessionPage />} />
           <Route path="/interviews/:id/result" element={<InterviewResultPage />} />
           <Route path="/roadmap" element={<RoadmapPage />} />
+          <Route path="/roadmap/history" element={<RoadmapHistoryPage />} />
+          <Route path="/roadmap/:id" element={<RoadmapDetailsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/design-system" element={<DesignSystemPage />} />

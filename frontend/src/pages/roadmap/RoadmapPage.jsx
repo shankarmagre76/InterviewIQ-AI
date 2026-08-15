@@ -25,6 +25,7 @@ import { useActiveRoadmap } from '../../hooks/useActiveRoadmap';
 import { roadmapService } from '../../services/roadmapService';
 import { GenerateRoadmapModal } from '../../components/roadmap/GenerateRoadmapModal';
 import { RoadmapPhaseTimeline } from '../../components/roadmap/RoadmapPhaseTimeline';
+import { RoadmapProgressTracker } from '../../components/roadmap/RoadmapProgressTracker';
 
 export const RoadmapPage = () => {
   const navigate = useNavigate();
@@ -32,6 +33,9 @@ export const RoadmapPage = () => {
 
   // Generate Roadmap Modal State
   const [showGenerateModal, setShowGenerateModal] = useState(false);
+
+  // Milestone Toast State
+  const [milestoneMessage, setMilestoneMessage] = useState(null);
 
   // Task Status Update State
   const [updatingTaskId, setUpdatingTaskId] = useState(null);
@@ -46,8 +50,24 @@ export const RoadmapPage = () => {
     if (!taskId || updatingTaskId) return;
 
     setUpdatingTaskId(taskId);
+    setMilestoneMessage(null);
+
     try {
-      await roadmapService.completeTask(taskId);
+      const response = await roadmapService.completeTask(taskId);
+      const resData = response?.data || response;
+      const progressInfo = resData?.progress || {};
+
+      // Milestone Feedback logic
+      if (progressInfo.roadmapProgress === 100 || progressInfo.roadmapStatus === 'COMPLETED') {
+        setMilestoneMessage('🎉 Congratulations! You have completed your entire AI Learning Roadmap!');
+      } else if (progressInfo.phaseProgress === 100 || progressInfo.phaseStatus === 'COMPLETED') {
+        setMilestoneMessage('🌟 Phase Milestone Achieved! You have completed all tasks in this phase.');
+      } else if (progressInfo.roadmapProgress >= 50 && progress < 50) {
+        setMilestoneMessage('🚀 Halfway Milestone! You crossed 50% overall roadmap completion.');
+      } else {
+        setMilestoneMessage('Task marked as completed! Roadmap progress updated.');
+      }
+
       await refresh();
     } catch (err) {
       console.error('Error completing task:', err);
@@ -120,16 +140,17 @@ export const RoadmapPage = () => {
   const phases = roadmap.phases || [];
 
   // Task Statistics
-  const completedTasksCount = tasks.filter((t) => t.status === 'COMPLETED' || t.status === 'Completed').length;
-  const remainingTasksCount = Math.max(0, tasks.length - completedTasksCount);
+  const completedTasksCount = tasks.filter((t) => t.status === 'COMPLETED' || t.status === 'Completed' || t.status === 'SKIPPED').length;
+  const totalTasksCount = tasks.length;
 
   // Active Focus Phase & Next Recommended Task
   const currentPhase = phases.find((p) => p.status !== 'COMPLETED' && p.progress < 100) || phases[0] || null;
   const currentFocus = currentPhase?.title || 'Core Foundation';
+  const currentPhaseProgress = currentPhase?.progress || 0;
 
   const nextRecommendedTask =
     tasks.find((t) => t.status === 'IN_PROGRESS' || t.status === 'In Progress') ||
-    tasks.find((t) => t.status === 'PENDING' || t.status === 'Not Started' || t.status === 'Pending') ||
+    tasks.find((t) => t.status === 'PENDING' || t.status === 'Not Started' || t.status === 'NOT_STARTED') ||
     tasks[0] || null;
 
   return (
@@ -160,6 +181,18 @@ export const RoadmapPage = () => {
             </Button>
           </div>
         }
+      />
+
+      {/* Real-time Progress Metrics & Milestone Banner */}
+      <RoadmapProgressTracker
+        overallProgress={overallProgress}
+        currentPhaseProgress={currentPhaseProgress}
+        currentPhaseTitle={currentFocus}
+        completedTasks={completedTasksCount}
+        totalTasks={totalTasksCount}
+        roadmapStatus={status}
+        milestoneMessage={milestoneMessage}
+        onDismissMilestone={() => setMilestoneMessage(null)}
       />
 
       {/* Hero Progress Overview Card */}
@@ -227,7 +260,7 @@ export const RoadmapPage = () => {
             <span className="text-[11px] text-slate-400 font-semibold flex items-center gap-1.5">
               <Circle className="w-3.5 h-3.5 text-amber-400" /> Tasks Remaining
             </span>
-            <span className="text-lg font-bold text-amber-400 block">{remainingTasksCount}</span>
+            <span className="text-lg font-bold text-amber-400 block">{totalTasksCount - completedTasksCount}</span>
           </div>
 
           <div className="p-3.5 rounded-2xl bg-slate-950/50 border border-slate-800 space-y-1">
