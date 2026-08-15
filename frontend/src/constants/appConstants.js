@@ -1,4 +1,4 @@
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'InterviewIQ AI';
+export const APP_NAME = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_NAME) || 'InterviewIQ AI';
 export const APP_VERSION = '1.0.0';
 
 export const API_ENDPOINTS = {
@@ -33,14 +33,14 @@ export const API_ENDPOINTS = {
   },
 
   RESUME: {
-    BASE: '/resumes',
-    HISTORY: '/resumes/history',
-    BY_ID: (id) => `/resumes/${id}`,
-    ANALYZE: '/resumes/analyze',
-    ANALYSIS: '/resumes/analysis',
-    ANALYSIS_LATEST: '/resumes/analysis/latest',
-    ANALYSIS_HISTORY: '/resumes/analysis/history',
-    ANALYSIS_BY_ID: (id) => `/resumes/analysis/${id}`,
+    BASE: '/profile/resume',
+    HISTORY: '/profile/resume/history',
+    BY_ID: (id) => `/profile/resume/${id}`,
+    ANALYZE: '/profile/resume/analyze',
+    ANALYSIS: '/profile/resume/analysis',
+    ANALYSIS_LATEST: '/profile/resume/analysis/latest',
+    ANALYSIS_HISTORY: '/profile/resume/analysis/history',
+    ANALYSIS_BY_ID: (id) => `/profile/resume/analysis/${id}`,
   },
 
   COMPANY: {
@@ -63,13 +63,15 @@ export const API_ENDPOINTS = {
 
   SAVED_JOB: {
     BASE: '/saved-jobs',
-    BY_ID: (id) => `/saved-jobs/${id}`,
+    CHECK: (jobId) => `/saved-jobs/check/${jobId}`,
+    BY_ID: (jobId) => `/saved-jobs/${jobId}`,
   },
 
   INTERVIEW: {
     BASE: '/interviews',
     START: '/interviews/start',
     BY_ID: (id) => `/interviews/${id}`,
+    RESUME: (id) => `/interviews/${id}/resume`,
     QUESTIONS: (id) => `/interviews/${id}/questions`,
     ANSWER: (id) => `/interviews/${id}/answer`,
     COMPLETE: (id) => `/interviews/${id}/complete`,
@@ -151,3 +153,14 @@ export const STATUS_TYPES = {
   SUCCESS: 'success',
   ERROR: 'error',
 };
+
+export const APPLICATION_STATUSES = [
+  'Applied',
+  'Under Review',
+  'Interview Scheduled',
+  'Technical Round',
+  'HR Round',
+  'Offered',
+  'Rejected',
+  'Withdrawn',
+];

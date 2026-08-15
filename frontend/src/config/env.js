@@ -27,8 +27,9 @@ function auditEnvironmentSecrets() {
 auditEnvironmentSecrets();
 
 const getEnvVar = (key, defaultValue = '') => {
-  const value = import.meta.env[key];
-  if (!value && import.meta.env.DEV && defaultValue) {
+  const envObj = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+  const value = envObj[key];
+  if (!value && envObj.DEV && defaultValue) {
     console.warn(
       `[Env Warning]: Missing environment variable '${key}'. Falling back to default: '${defaultValue}'`
     );
@@ -39,9 +40,9 @@ const getEnvVar = (key, defaultValue = '') => {
 export const env = {
   API_BASE_URL: getEnvVar('VITE_API_BASE_URL', 'http://localhost:5000/api/v1'),
   APP_NAME: getEnvVar('VITE_APP_NAME', 'InterviewIQ AI'),
-  APP_ENV: getEnvVar('VITE_APP_ENV', import.meta.env.MODE || 'development'),
-  IS_DEV: import.meta.env.DEV,
-  IS_PROD: import.meta.env.PROD,
+  APP_ENV: getEnvVar('VITE_APP_ENV', (typeof import.meta !== 'undefined' && import.meta.env?.MODE) || 'development'),
+  IS_DEV: typeof import.meta !== 'undefined' && Boolean(import.meta.env?.DEV),
+  IS_PROD: typeof import.meta !== 'undefined' && Boolean(import.meta.env?.PROD),
 };
 
 export default env;

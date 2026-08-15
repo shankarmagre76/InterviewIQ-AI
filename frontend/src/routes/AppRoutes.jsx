@@ -30,14 +30,21 @@ import ProfilePage from '../pages/profile/ProfilePage';
 import ResumeOverviewPage from '../pages/resume/ResumeOverviewPage';
 import ResumeAnalysisPage from '../pages/resume/ResumeAnalysisPage';
 import CompaniesPage from '../pages/company/CompaniesPage';
+import CompanyDetailsPage from '../pages/company/CompanyDetailsPage';
 import JobsPage from '../pages/jobs/JobsPage';
 import JobDetailsPage from '../pages/jobs/JobDetailsPage';
 import ApplicationsPage from '../pages/application/ApplicationsPage';
+import ApplicationDetailsPage from '../pages/application/ApplicationDetailsPage';
 import SavedJobsPage from '../pages/jobs/SavedJobsPage';
+import InterviewHistoryPage from '../pages/interviews/InterviewHistoryPage';
 import MockInterviewPage from '../pages/interviews/MockInterviewPage';
+import InterviewSetupPage from '../pages/interviews/InterviewSetupPage';
+import InterviewLobbyPage from '../pages/interviews/InterviewLobbyPage';
 import InterviewSessionPage from '../pages/interviews/InterviewSessionPage';
 import InterviewResultPage from '../pages/interviews/InterviewResultPage';
 import RoadmapPage from '../pages/roadmap/RoadmapPage';
+import RoadmapDetailsPage from '../pages/roadmap/RoadmapDetailsPage';
+import RoadmapHistoryPage from '../pages/roadmap/RoadmapHistoryPage';
 import NotificationsPage from '../pages/notifications/NotificationsPage';
 import SettingsPage from '../pages/settings/SettingsPage';
 import DesignSystemPage from '../pages/DesignSystemPage';
@@ -86,14 +93,22 @@ export const AppRoutes = () => {
           <Route path="/resume" element={<ResumeOverviewPage />} />
           <Route path="/resume/analysis" element={<ResumeAnalysisPage />} />
           <Route path="/companies" element={<CompaniesPage />} />
+          <Route path="/companies/:id" element={<CompanyDetailsPage />} />
           <Route path="/jobs" element={<JobsPage />} />
           <Route path="/jobs/:id" element={<JobDetailsPage />} />
           <Route path="/applications" element={<ApplicationsPage />} />
+          <Route path="/applications/:id" element={<ApplicationDetailsPage />} />
           <Route path="/saved-jobs" element={<SavedJobsPage />} />
-          <Route path="/interviews" element={<MockInterviewPage />} />
+          <Route path="/interviews" element={<InterviewHistoryPage />} />
+          <Route path="/interviews/analytics" element={<MockInterviewPage />} />
+          <Route path="/interviews/setup" element={<InterviewSetupPage />} />
+          <Route path="/interviews/start" element={<InterviewSetupPage />} />
+          <Route path="/interviews/:id/lobby" element={<InterviewLobbyPage />} />
           <Route path="/interviews/:id" element={<InterviewSessionPage />} />
           <Route path="/interviews/:id/result" element={<InterviewResultPage />} />
           <Route path="/roadmap" element={<RoadmapPage />} />
+          <Route path="/roadmap/history" element={<RoadmapHistoryPage />} />
+          <Route path="/roadmap/:id" element={<RoadmapDetailsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/design-system" element={<DesignSystemPage />} />
