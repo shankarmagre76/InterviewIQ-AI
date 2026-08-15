@@ -37,6 +37,8 @@ import ApplicationsPage from '../pages/application/ApplicationsPage';
 import ApplicationDetailsPage from '../pages/application/ApplicationDetailsPage';
 import SavedJobsPage from '../pages/jobs/SavedJobsPage';
 import MockInterviewPage from '../pages/interviews/MockInterviewPage';
+import InterviewSetupPage from '../pages/interviews/InterviewSetupPage';
+import InterviewLobbyPage from '../pages/interviews/InterviewLobbyPage';
 import InterviewSessionPage from '../pages/interviews/InterviewSessionPage';
 import InterviewResultPage from '../pages/interviews/InterviewResultPage';
 import RoadmapPage from '../pages/roadmap/RoadmapPage';
@@ -95,6 +97,9 @@ export const AppRoutes = () => {
           <Route path="/applications/:id" element={<ApplicationDetailsPage />} />
           <Route path="/saved-jobs" element={<SavedJobsPage />} />
           <Route path="/interviews" element={<MockInterviewPage />} />
+          <Route path="/interviews/setup" element={<InterviewSetupPage />} />
+          <Route path="/interviews/start" element={<InterviewSetupPage />} />
+          <Route path="/interviews/:id/lobby" element={<InterviewLobbyPage />} />
           <Route path="/interviews/:id" element={<InterviewSessionPage />} />
           <Route path="/interviews/:id/result" element={<InterviewResultPage />} />
           <Route path="/roadmap" element={<RoadmapPage />} />

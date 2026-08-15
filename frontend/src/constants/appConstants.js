@@ -1,4 +1,4 @@
-export const APP_NAME = import.meta.env.VITE_APP_NAME || 'InterviewIQ AI';
+export const APP_NAME = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_APP_NAME) || 'InterviewIQ AI';
 export const APP_VERSION = '1.0.0';
 
 export const API_ENDPOINTS = {
@@ -71,6 +71,7 @@ export const API_ENDPOINTS = {
     BASE: '/interviews',
     START: '/interviews/start',
     BY_ID: (id) => `/interviews/${id}`,
+    RESUME: (id) => `/interviews/${id}/resume`,
     QUESTIONS: (id) => `/interviews/${id}/questions`,
     ANSWER: (id) => `/interviews/${id}/answer`,
     COMPLETE: (id) => `/interviews/${id}/complete`,
