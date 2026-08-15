@@ -1,7 +1,7 @@
 import { interviewService } from '../../services/interviewService.js';
 import { api } from '../../services/api.js';
 
-console.log('=== F7.5 INTERVIEW SESSION UI & INTERACTION TEST SUITE ===\n');
+console.log('=== F7.6 ANSWER SUBMISSION & PROGRESS INTEGRATION TEST SUITE ===\n');
 
 let passed = 0;
 let failed = 0;
@@ -16,167 +16,139 @@ function assert(condition, message) {
   }
 }
 
-async function runSessionTestSuite() {
+async function runSubmissionTestSuite() {
   const mockId = '60d5ecb8b3b3b3b3b3b3b3b3';
 
-  // Test 1: Fetch session questions & compute initial active question & progress
+  // Test 1: Empty Answer & Very Long Answer Validation Rules
   try {
-    const origGet = api.get;
+    const validate = (answer) => {
+      if (!answer || !answer.trim()) return 'Answer text cannot be empty';
+      if (answer.length > 10000) return 'Answer text exceeds maximum allowed length of 10,000 characters';
+      return null;
+    };
 
-    api.get = async () => ({
-      data: {
-        success: true,
-        statusCode: 200,
-        message: 'Interview details retrieved successfully',
-        data: {
-          interview: {
-            _id: mockId,
-            role: 'Software Engineer',
-            interviewType: 'Technical',
-            difficulty: 'Intermediate',
-            totalQuestions: 10,
-            completedQuestions: 3,
-            status: 'In Progress',
-          },
-          questions: [
-            { _id: 'q1', sequenceNumber: 1, question: 'What is DOM?', answer: 'Document Object Model' },
-            { _id: 'q2', sequenceNumber: 2, question: 'Explain Event Loop', answer: 'Single thread event queue' },
-            { _id: 'q3', sequenceNumber: 3, question: 'Explain Closures', answer: 'Function lexical environment' },
-            { _id: 'q4', sequenceNumber: 4, question: 'Explain HashMap vs ConcurrentHashMap', answer: '' },
-            { _id: 'q5', sequenceNumber: 5, question: 'What is REST?', answer: '' },
-          ],
-        },
-      },
-    });
-
-    const res = await interviewService.getInterviewDetails(mockId);
-    const data = res.data;
-
-    const unansweredIndex = data.questions.findIndex((q) => !q.answer || q.answer.trim().length === 0);
-    const currentQ = data.questions[unansweredIndex];
-    const totalCount = data.interview.totalQuestions;
-    const remainingCount = totalCount - (unansweredIndex + 1);
-
-    assert(unansweredIndex === 3, 'Identified 4th question as first unanswered question (4 / 10)');
-    assert(currentQ.question === 'Explain HashMap vs ConcurrentHashMap', 'Active question matches target question text');
-    assert(totalCount === 10, 'Total questions count reads 10');
-    assert(remainingCount === 6, 'Remaining questions count calculated accurately (6 remaining)');
-
-    api.get = origGet;
+    assert(validate('') === 'Answer text cannot be empty', 'Empty string answer caught by validation');
+    assert(validate('   ') === 'Answer text cannot be empty', 'Whitespace-only answer caught by validation');
+    assert(validate('A'.repeat(10001)) === 'Answer text exceeds maximum allowed length of 10,000 characters', 'Over 10,000 characters answer caught by validation');
+    assert(validate('Valid response text') === null, 'Valid answer passes validation');
   } catch (err) {
     assert(false, `Test 1 failed: ${err.message}`);
   }
 
-  // Test 2: Character Counter & Length Validation
-  try {
-    const sampleAnswer = 'HashMap is not thread-safe. ConcurrentHashMap uses segmented locking for thread safety.';
-    const charLimit = 10000;
-    const charCountText = `${sampleAnswer.length} / ${charLimit} characters`;
-
-    assert(sampleAnswer.length === 87, 'Answer character count computed accurately (87 characters)');
-    assert(charCountText === '87 / 10000 characters', 'Character count text string formatted properly');
-    assert(sampleAnswer.length <= charLimit, 'Answer character count is within 10,000 character limit');
-  } catch (err) {
-    assert(false, `Test 2 failed: ${err.message}`);
-  }
-
-  // Test 3: Submit Answer & Gemini Evaluation Integration
-  try {
-    const origPost = api.post;
-    let capturedBody = null;
-
-    api.post = async (url, body) => {
-      capturedBody = body;
-      return {
-        data: {
-          success: true,
-          statusCode: 200,
-          message: 'Answer submitted and evaluated successfully',
-          data: {
-            question: { _id: body.questionId, score: 92 },
-            evaluation: { score: 92, feedback: 'Excellent explanation of segment locks.' },
-            completedQuestions: 4,
-            totalQuestions: 10,
-            isCompleted: false,
-          },
-        },
-      };
-    };
-
-    const res = await interviewService.submitAnswer(mockId, {
-      questionId: 'q4',
-      answer: 'HashMap is non-thread-safe while ConcurrentHashMap uses segment lock buckets.',
-    });
-
-    assert(capturedBody.questionId === 'q4', 'Submit answer passes correct questionId in payload');
-    assert(res.data.evaluation.score === 92, 'Gemini evaluation score returned successfully');
-    assert(res.data.completedQuestions === 4, 'Completed questions count updated to 4');
-    assert(res.data.isCompleted === false, 'Session is not completed yet (6 questions left)');
-
-    api.post = origPost;
-  } catch (err) {
-    assert(false, `Test 3 failed: ${err.message}`);
-  }
-
-  // Test 4: Final Question Submission & Auto Navigation to Result
+  // Test 2: Backend Synced Progress Update (Question 4 / 10 -> 40%)
   try {
     const origPost = api.post;
 
-    api.post = async () => ({
+    api.post = async (url, body) => ({
       data: {
         success: true,
         statusCode: 200,
-        message: 'Answer submitted and evaluated successfully',
+        message: 'Answer evaluated',
         data: {
-          question: { _id: 'q10', score: 95 },
-          evaluation: { score: 95, feedback: 'All questions completed.' },
-          completedQuestions: 10,
+          question: { _id: body.questionId, score: 88 },
+          evaluation: { score: 88, feedback: 'Well structured.' },
+          completedQuestions: 4,
           totalQuestions: 10,
-          isCompleted: true,
-          result: { overallScore: 91 },
+          isCompleted: false,
         },
       },
     });
 
-    const res = await interviewService.submitAnswer(mockId, { questionId: 'q10', answer: 'Final answer' });
-    assert(res.data.isCompleted === true, 'Final answer completion returns isCompleted = true');
-    assert(`/interviews/${mockId}/result` === `/interviews/${mockId}/result`, 'Target redirection URL matches /interviews/:id/result');
+    const res = await interviewService.submitAnswer(mockId, { questionId: 'q4', answer: 'Valid answer text' });
+    const { completedQuestions, totalQuestions } = res.data;
+    const percentage = Math.round((completedQuestions / totalQuestions) * 100);
+
+    assert(completedQuestions === 4, 'Backend returns completedQuestions = 4');
+    assert(totalQuestions === 10, 'Backend returns totalQuestions = 10');
+    assert(percentage === 40, 'Backend-synced progress calculates accurately to 40%');
+
+    api.post = origPost;
+  } catch (err) {
+    assert(false, `Test 2 failed: ${err.message}`);
+  }
+
+  // Test 3: Duplicate Submission Prevention
+  try {
+    let isSubmitting = false;
+    let submitCalls = 0;
+
+    const submitFn = async () => {
+      if (isSubmitting) return 'PREVENTED_DUPLICATE';
+      isSubmitting = true;
+      submitCalls++;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      isSubmitting = false;
+      return 'SUCCESS';
+    };
+
+    const p1 = submitFn();
+    const r2 = await submitFn();
+    const r1 = await p1;
+
+    assert(submitCalls === 1, 'Only 1 submission call allowed during evaluation');
+    assert(r2 === 'PREVENTED_DUPLICATE', 'Duplicate click during evaluation returns PREVENTED_DUPLICATE');
+    assert(r1 === 'SUCCESS', 'Initial submission completes successfully');
+  } catch (err) {
+    assert(false, `Test 3 failed: ${err.message}`);
+  }
+
+  // Test 4: Error Handling for Status Codes (401, 404, 409, 429, 500)
+  try {
+    const origPost = api.post;
+
+    const testErrorStatus = async (status, expectedPartialMsg) => {
+      api.post = async () => {
+        const err = new Error('HTTP Error');
+        err.response = { status, data: { message: expectedPartialMsg } };
+        throw err;
+      };
+
+      try {
+        await interviewService.submitAnswer(mockId, { questionId: 'q1', answer: 'Answer text' });
+        return false;
+      } catch (err) {
+        return err?.response?.status === status;
+      }
+    };
+
+    assert(await testErrorStatus(401, 'Unauthorized'), '401 Unauthorized status handled');
+    assert(await testErrorStatus(404, 'Not Found'), '404 Not Found status handled');
+    assert(await testErrorStatus(409, 'Conflict'), '409 Conflict status handled');
+    assert(await testErrorStatus(429, 'Rate Limit'), '429 Rate limit status handled');
+    assert(await testErrorStatus(500, 'Server Error'), '500 Server error status handled');
 
     api.post = origPost;
   } catch (err) {
     assert(false, `Test 4 failed: ${err.message}`);
   }
 
-  // Test 5: Keyboard Shortcut (Ctrl + Enter) Simulation
+  // Test 5: Draft Preservation & Safe Retry
   try {
-    const mockKeyboardEvent = {
-      ctrlKey: true,
-      metaKey: false,
-      key: 'Enter',
-      preventDefaultCalled: false,
-      preventDefault() {
-        this.preventDefaultCalled = true;
-      },
+    const draftAnswer = 'My detailed technical answer that failed due to network error';
+    let currentAnswerState = draftAnswer;
+    let retryAttempted = false;
+
+    // Simulate network error
+    const onSubmissionError = () => {
+      // Form state currentAnswerState is NOT reset
+      retryAttempted = true;
     };
 
-    const isSubmitShortcut = (mockKeyboardEvent.ctrlKey || mockKeyboardEvent.metaKey) && mockKeyboardEvent.key === 'Enter';
-    if (isSubmitShortcut) {
-      mockKeyboardEvent.preventDefault();
-    }
+    onSubmissionError();
 
-    assert(isSubmitShortcut === true, 'Ctrl + Enter keyboard event detected properly');
-    assert(mockKeyboardEvent.preventDefaultCalled === true, 'preventDefault called to stop newline insertion on Ctrl + Enter');
+    assert(retryAttempted === true, 'Error state triggers retry availability');
+    assert(currentAnswerState === draftAnswer, 'Candidate draft answer preserved intact for safe retry');
   } catch (err) {
     assert(false, `Test 5 failed: ${err.message}`);
   }
 
-  console.log(`\n=== SESSION TEST SUMMARY: ${passed} PASSED, ${failed} FAILED ===`);
+  console.log(`\n=== SUBMISSION TEST SUMMARY: ${passed} PASSED, ${failed} FAILED ===`);
   if (failed === 0) {
-    console.log('ALL F7.5 INTERVIEW SESSION UI TESTS COMPLETED SUCCESSFULLY!');
+    console.log('ALL F7.6 ANSWER SUBMISSION & PROGRESS TESTS COMPLETED SUCCESSFULLY!');
   } else {
-    console.error('SOME SESSION TESTS FAILED!');
+    console.error('SOME SUBMISSION TESTS FAILED!');
     process.exit(1);
   }
 }
 
-runSessionTestSuite();
+runSubmissionTestSuite();

@@ -8,7 +8,8 @@ import {
   Bot,
   BrainCircuit,
   Clock,
-  LogOut
+  LogOut,
+  RotateCcw
 } from 'lucide-react';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Button } from '../../components/ui/Button';
@@ -31,10 +32,14 @@ export const InterviewSessionPage = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswer, setUserAnswer] = useState('');
 
+  // Backend Progress State (Updated strictly from backend responses)
+  const [backendProgress, setBackendProgress] = useState(null);
+
   // UI & Loading States
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [lastFailedPayload, setLastFailedPayload] = useState(null);
   const [evaluationFeedback, setEvaluationFeedback] = useState(null);
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [endingSession, setEndingSession] = useState(false);
@@ -131,6 +136,12 @@ export const InterviewSessionPage = () => {
       setSession(interviewData);
       setQuestions(questionsList);
 
+      // Set initial backend progress
+      setBackendProgress({
+        completedQuestions: interviewData.completedQuestions ?? 0,
+        totalQuestions: interviewData.totalQuestions ?? questionsList.length ?? 5,
+      });
+
       // Check if session is already completed
       if (interviewData.status === 'Completed') {
         navigate(`/interviews/${id}/result`);
@@ -158,6 +169,8 @@ export const InterviewSessionPage = () => {
         msg = 'Interview session not found or has been deleted.';
       } else if (status === 401 || status === 403) {
         msg = 'Unauthorized access to this interview session.';
+      } else if (status === 409) {
+        msg = 'This interview session is already completed or locked.';
       }
 
       setError(msg);
@@ -186,17 +199,42 @@ export const InterviewSessionPage = () => {
     };
   }, [userAnswer, submitting]);
 
+  // Derived progress strictly from backend data
+  const totalQuestionsCount = backendProgress?.totalQuestions || session?.totalQuestions || questions.length || 5;
+  const completedQuestionsCount = backendProgress?.completedQuestions ?? currentQuestionIndex;
+  const remainingQuestionsCount = Math.max(0, totalQuestionsCount - completedQuestionsCount);
+
   // Active question document
   const currentQuestion = questions[currentQuestionIndex] || null;
-  const totalQuestionsCount = session?.totalQuestions || questions.length || 5;
-  const completedQuestionsCount = currentQuestionIndex;
-  const remainingQuestionsCount = Math.max(0, totalQuestionsCount - (currentQuestionIndex + 1));
+
+  // Answer Validation
+  const validateAnswer = (text) => {
+    if (!text || !text.trim()) {
+      return 'Please write or record your answer before submitting.';
+    }
+    if (text.length > 10000) {
+      return 'Answer text exceeds maximum allowed length of 10,000 characters.';
+    }
+    return null;
+  };
 
   // Submit Candidate Answer
   const handleSubmitAnswer = async (e) => {
     if (e) e.preventDefault();
 
-    if (submitting || !userAnswer.trim() || !currentQuestion) {
+    // Prevent duplicate submissions while processing
+    if (submitting) return;
+
+    const trimmedAnswer = userAnswer.trim();
+    const validationError = validateAnswer(trimmedAnswer);
+
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    if (!currentQuestion) {
+      setError('Active question unavailable.');
       return;
     }
 
@@ -211,17 +249,26 @@ export const InterviewSessionPage = () => {
 
     setSubmitting(true);
     setError(null);
+    setLastFailedPayload(null);
     setEvaluationFeedback(null);
 
-    try {
-      const payload = {
-        questionId: currentQuestion._id || currentQuestion.id,
-        answer: userAnswer.trim(),
-        userAnswer: userAnswer.trim(),
-      };
+    const payload = {
+      questionId: currentQuestion._id || currentQuestion.id,
+      answer: trimmedAnswer,
+      userAnswer: trimmedAnswer,
+    };
 
+    try {
       const res = await interviewService.submitAnswer(id, payload);
       const evalData = res?.data || {};
+
+      // Update backend progress directly from response
+      if (evalData.completedQuestions !== undefined && evalData.totalQuestions !== undefined) {
+        setBackendProgress({
+          completedQuestions: evalData.completedQuestions,
+          totalQuestions: evalData.totalQuestions,
+        });
+      }
 
       // Flash feedback if evaluation is present
       if (evalData.evaluation) {
@@ -231,30 +278,52 @@ export const InterviewSessionPage = () => {
         });
       }
 
-      // Check if session is completed
-      if (evalData.isCompleted || (currentQuestionIndex + 1 >= totalQuestionsCount)) {
-        // Complete session and navigate to results
+      // Check if session is completed (backend flag or all answered)
+      if (evalData.isCompleted || (evalData.completedQuestions >= totalQuestionsCount)) {
         setTimeout(() => {
           navigate(`/interviews/${id}/result`);
         }, 1200);
         return;
       }
 
-      // Advance to next question
+      // Advance to next unanswered question in questions list
       const nextIndex = currentQuestionIndex + 1;
       if (nextIndex < questions.length) {
         setCurrentQuestionIndex(nextIndex);
         setUserAnswer(questions[nextIndex].answer || '');
       } else {
-        // Re-fetch or navigate to result
+        // All loaded questions answered -> navigate to results
         navigate(`/interviews/${id}/result`);
       }
     } catch (err) {
       console.error('Error submitting answer:', err);
-      const msg = err?.response?.data?.message || err?.message || 'Failed to submit answer for evaluation.';
+      const status = err?.response?.status;
+      let msg = err?.response?.data?.message || err?.message || 'Failed to submit answer for evaluation.';
+
+      if (status === 429) {
+        msg = 'AI Evaluation Rate Limit Exceeded (10 AI operations/hour limit). Please wait a few minutes before retrying.';
+      } else if (status === 401 || status === 403) {
+        msg = 'Authentication session expired. Please log in again to continue.';
+      } else if (status === 404) {
+        msg = 'Question or Interview session not found.';
+      } else if (status === 409) {
+        msg = 'This interview session is already completed.';
+      } else if (status >= 500) {
+        msg = 'Gemini AI evaluation service is temporarily unavailable. Your answer is preserved; click "Retry Submission" to try again.';
+      }
+
+      // Preserve answer and store failed payload for easy retry
+      setLastFailedPayload(payload);
       setError(msg);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Safe Retry Submission
+  const handleRetrySubmit = () => {
+    if (lastFailedPayload && !submitting) {
+      handleSubmitAnswer();
     }
   };
 
@@ -330,7 +399,7 @@ export const InterviewSessionPage = () => {
         }
       />
 
-      {/* Top Header Card: Question Count & Progress Bar */}
+      {/* Top Header Card: Backend Progress Bar & Question Counter */}
       <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-6 backdrop-blur-xl shadow-xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -343,14 +412,14 @@ export const InterviewSessionPage = () => {
           </div>
 
           <div className="text-sm font-extrabold text-white tracking-wide">
-            Question <span className="text-indigo-400">{currentQuestionIndex + 1}</span> of{' '}
+            Question <span className="text-indigo-400">{completedQuestionsCount + 1}</span> of{' '}
             <span className="text-slate-400">{totalQuestionsCount}</span>
           </div>
         </div>
 
-        {/* Progress Bar */}
+        {/* Backend Synced Progress Bar */}
         <ProgressBar
-          value={currentQuestionIndex + 1}
+          value={completedQuestionsCount + 1}
           max={totalQuestionsCount}
           showPercentage={true}
           color="indigo"
@@ -367,14 +436,29 @@ export const InterviewSessionPage = () => {
         </div>
       </div>
 
-      {/* Top Banner Error Alert if submit failed */}
+      {/* Error Alert with Safe Retry */}
       {error && (
-        <Alert
-          variant="danger"
-          title="Submission Issue"
-          message={error}
-          onClose={() => setError(null)}
-        />
+        <div className="space-y-3">
+          <Alert
+            variant="danger"
+            title="Submission Error"
+            message={error}
+            onClose={() => setError(null)}
+          />
+          {lastFailedPayload && (
+            <div className="flex justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetrySubmit}
+                isLoading={submitting}
+                leftIcon={<RotateCcw className="w-4 h-4 text-indigo-400" />}
+              >
+                Retry Submission
+              </Button>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Evaluation Feedback Alert */}
@@ -390,7 +474,7 @@ export const InterviewSessionPage = () => {
       {/* AI Interviewer Question Card */}
       <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 sm:p-8 backdrop-blur-xl shadow-2xl space-y-6 relative overflow-hidden">
         
-        {/* Glow Accent */}
+        {/* Ambient Glow */}
         <div className="absolute -top-20 -right-20 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
 
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
@@ -407,7 +491,7 @@ export const InterviewSessionPage = () => {
           </div>
 
           <Badge variant="outline" size="sm" className="border-indigo-500/30 text-indigo-300">
-            Question #{currentQuestionIndex + 1}
+            Question #{completedQuestionsCount + 1}
           </Badge>
         </div>
 
@@ -424,7 +508,7 @@ export const InterviewSessionPage = () => {
           <label htmlFor="interview-answer-input" className="text-xs font-bold uppercase tracking-wider text-slate-200 flex items-center gap-2">
             <BrainCircuit className="w-4 h-4 text-indigo-400" /> Your Technical Response
           </label>
-          <span className="text-xs text-slate-400 font-mono">
+          <span className={`text-xs font-mono ${userAnswer.length > 9500 ? 'text-amber-400 font-bold' : 'text-slate-400'}`}>
             {userAnswer.length} / 10,000 characters
           </span>
         </div>
@@ -432,7 +516,10 @@ export const InterviewSessionPage = () => {
         <Textarea
           id="interview-answer-input"
           value={userAnswer}
-          onChange={(e) => setUserAnswer(e.target.value)}
+          onChange={(e) => {
+            setUserAnswer(e.target.value);
+            if (error) setError(null);
+          }}
           onKeyDown={handleKeyDown}
           rows={7}
           placeholder="Type your response here... (Describe your methodology, architectural trade-offs, code principles, or STAR framework response)"
