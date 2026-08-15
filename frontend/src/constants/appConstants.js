@@ -63,7 +63,8 @@ export const API_ENDPOINTS = {
 
   SAVED_JOB: {
     BASE: '/saved-jobs',
-    BY_ID: (id) => `/saved-jobs/${id}`,
+    CHECK: (jobId) => `/saved-jobs/check/${jobId}`,
+    BY_ID: (jobId) => `/saved-jobs/${jobId}`,
   },
 
   INTERVIEW: {
