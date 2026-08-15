@@ -152,3 +152,14 @@ export const STATUS_TYPES = {
   SUCCESS: 'success',
   ERROR: 'error',
 };
+
+export const APPLICATION_STATUSES = [
+  'Applied',
+  'Under Review',
+  'Interview Scheduled',
+  'Technical Round',
+  'HR Round',
+  'Offered',
+  'Rejected',
+  'Withdrawn',
+];
