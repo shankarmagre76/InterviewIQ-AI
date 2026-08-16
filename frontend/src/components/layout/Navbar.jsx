@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Sparkles, Bell, Menu, User, LogOut, Settings } from 'lucide-react';
+import { Sparkles, Menu, User, LogOut, Settings } from 'lucide-react';
+
 import { useAuth } from '../../hooks/useAuth';
 import { Dropdown } from '../ui/Dropdown';
 import { Badge } from '../ui/Badge';

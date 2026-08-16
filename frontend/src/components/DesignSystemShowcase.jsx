@@ -143,8 +143,74 @@ export function DesignSystemShowcaseContent() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card variant="glass">
+              <CardHeader>
+                <CardTitle>Typography Scale & Font Families</CardTitle>
+                <CardDescription>Header font: Plus Jakarta Sans • Body font: Inter • Monospace: Fira Code</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-4 border-b border-slate-800 pb-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider block">Display Heading (4xl - 6xl)</span>
+                    <h1 className="text-display">InterviewIQ AI Platform</h1>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider block">Heading 1 (2xl - 3xl)</span>
+                    <h1 className="text-h1">Technical Mock Interviews</h1>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider block">Heading 2 (xl - 2xl)</span>
+                    <h2 className="text-h2">Career Readiness Score breakdown</h2>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider block">Heading 3 (base - lg)</span>
+                    <h3 className="text-h3">ATS Resume Optimization Analysis</h3>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider block">Body Text (sm)</span>
+                    <p className="text-body max-w-2xl">
+                      Real-time Gemini voice mock interviews, automated resume keyword scoring, and adaptive learning roadmaps tailored to your target engineering role.
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-mono text-indigo-400 uppercase tracking-wider block">Caption / Monospace (xs - 10px uppercase)</span>
+                    <p className="text-caption font-mono uppercase tracking-wider">
+                      STATUS: ACTIVE • API CONNECTED • COMPLIANT WITH ARIA 2.1
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card variant="glass">
+              <CardHeader>
+                <CardTitle>Spacing & Layout Standards</CardTitle>
+                <CardDescription>Container padding, section gaps, and grid rules.</CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                  <span className="text-xs font-bold text-indigo-300 block">Page Container</span>
+                  <p className="text-xs text-slate-400 font-mono">max-w-7xl mx-auto p-4 sm:p-6 lg:p-8</p>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                  <span className="text-xs font-bold text-cyan-300 block">Section Gaps</span>
+                  <p className="text-xs text-slate-400 font-mono">space-y-6 sm:space-y-8</p>
+                </div>
+                <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1">
+                  <span className="text-xs font-bold text-emerald-300 block">Card Padding</span>
+                  <p className="text-xs text-slate-400 font-mono">p-5 sm:p-6</p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
+
 
         {/* TAB 2: BUTTONS, BADGES & AVATARS */}
         {activeTab === 'buttons' && (

@@ -198,12 +198,12 @@ export const RegisterPage = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                tabIndex={-1}
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
-                className="text-slate-400 hover:text-slate-100 transition-colors p-1 cursor-pointer focus-visible:outline-none"
+                className="text-slate-400 hover:text-slate-100 transition-colors p-1 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded-md"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
+
             }
             error={fieldErrors.password}
             required

@@ -105,3 +105,15 @@ export const ActivitySkeleton = ({ count = 4, className = '' }) => {
   );
 };
 
+export const LoadingState = ({ message = 'Loading details...', size = 'lg', className = '' }) => {
+  return (
+    <div className={`flex flex-col items-center justify-center p-8 text-center space-y-3 ${className}`.trim()}>
+      <Spinner size={size} />
+      {message && <p className="text-xs font-semibold text-slate-400 animate-pulse">{message}</p>}
+    </div>
+  );
+};
+
+export default LoadingState;
+
+
