@@ -16,7 +16,14 @@ export const ProgressCircle = ({
   const strokeDashoffset = circumference - (percentage / 100) * circumference;
 
   return (
-    <div className={`inline-flex flex-col items-center justify-center relative ${className}`.trim()}>
+    <div
+      role="progressbar"
+      aria-valuenow={value}
+      aria-valuemin={0}
+      aria-valuemax={max}
+      className={`inline-flex flex-col items-center justify-center relative ${className}`.trim()}
+    >
+
       <svg width={size} height={size} className="transform -rotate-90">
         {/* Track Background */}
         <circle

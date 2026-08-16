@@ -113,9 +113,11 @@ export const MobileNavigation = ({ isOpen, onClose, isAdminMode = false }) => {
                   end={item.path === '/admin' || item.path === '/dashboard'}
                   onClick={onClose}
                   className={({ isActive }) => `
-                    flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
+                    flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 ${isAdminMode ? 'focus-visible:ring-rose-500' : 'focus-visible:ring-indigo-500'}
                     ${isActive
-                      ? 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 font-bold'
+                      ? isAdminMode
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-md shadow-rose-500/10 font-bold'
+                        : 'bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 shadow-md shadow-indigo-500/10 font-bold'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent'
                     }
                   `.trim()}
@@ -123,6 +125,7 @@ export const MobileNavigation = ({ isOpen, onClose, isAdminMode = false }) => {
                   <Icon className="w-4 h-4 shrink-0" />
                   <span>{item.label}</span>
                 </NavLink>
+
               );
             })}
 

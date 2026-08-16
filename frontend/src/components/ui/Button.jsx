@@ -11,11 +11,13 @@ const variantStyles = {
 };
 
 const sizeStyles = {
-  sm: 'px-3 py-1.5 text-xs rounded-lg font-medium gap-1.5',
+  xs: 'px-2.5 py-1 text-xs rounded-lg font-medium gap-1',
+  sm: 'px-3.5 py-1.5 text-xs rounded-xl font-semibold gap-1.5',
   md: 'px-4 py-2.5 text-sm rounded-xl font-semibold gap-2',
-  lg: 'px-6 py-3 text-base rounded-xl font-semibold gap-2.5',
+  lg: 'px-6 py-3 text-base rounded-xl font-bold gap-2.5',
   icon: 'p-2.5 rounded-xl text-sm font-medium',
 };
+
 
 export const Button = React.forwardRef(({
   children,
@@ -44,13 +46,14 @@ export const Button = React.forwardRef(({
       {...props}
     >
       {isLoading ? (
-        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+        <Loader2 className="w-4 h-4 animate-spin shrink-0" aria-hidden="true" />
       ) : (
-        leftIcon && <span className="shrink-0">{leftIcon}</span>
+        leftIcon && <span className="shrink-0" aria-hidden="true">{leftIcon}</span>
       )}
       {children}
-      {!isLoading && rightIcon && <span className="shrink-0">{rightIcon}</span>}
+      {!isLoading && rightIcon && <span className="shrink-0" aria-hidden="true">{rightIcon}</span>}
     </button>
+
   );
 });
 

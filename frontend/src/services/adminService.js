@@ -1,5 +1,5 @@
-import { api } from './api';
-import { API_ENDPOINTS } from '../constants/appConstants';
+import { api } from './api.js';
+import { API_ENDPOINTS } from '../constants/appConstants.js';
 
 export const adminService = {
   // System Health & Dashboard
@@ -110,6 +110,10 @@ export const adminService = {
   async getApplicationStats(params = {}) {
     const response = await api.get(API_ENDPOINTS.ADMIN.APPLICATION_STATS, { params });
     return response.data;
+  },
+
+  async getApplicationStatistics(params = {}) {
+    return this.getApplicationStats(params);
   },
 
   async getApplicationById(id) {

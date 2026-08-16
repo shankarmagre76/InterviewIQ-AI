@@ -4,15 +4,16 @@ import {
   Send,
   FileText,
   Upload,
-  AlertCircle,
   CheckCircle2,
   ArrowRight,
   ArrowLeft,
   Building2,
 } from 'lucide-react';
-
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
+import { Textarea } from '../ui/Textarea';
+import { Alert } from '../ui/Alert';
+
 import { resumeService } from '../../services/resumeService';
 import { applicationService } from '../../services/applicationService';
 import { parseApiError } from '../../utils/helpers';
@@ -33,17 +34,16 @@ export const JobApplyModal = ({
   const [coverLetter, setCoverLetter] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const [submittedApplication, setSubmittedApplication] = useState(null);
 
   useEffect(() => {
     if (isOpen) {
       setStep('form');
       setCoverLetter('');
       setError(null);
-      setSubmittedApplication(null);
       fetchActiveResume();
     }
   }, [isOpen]);
+
 
   const fetchActiveResume = async () => {
     setLoadingResume(true);
@@ -129,10 +129,9 @@ export const JobApplyModal = ({
       {step === 'form' && (
         <form onSubmit={handleGoToReview} className="space-y-5 text-xs sm:text-sm">
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-start gap-2.5">
-              <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-              <span>{error}</span>
-            </div>
+            <Alert variant="danger" title="Application Error" onClose={() => setError(null)}>
+              {error}
+            </Alert>
           )}
 
           {/* Selected Resume Section */}
@@ -180,7 +179,7 @@ export const JobApplyModal = ({
           {/* Cover Letter Text Area */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="font-bold text-slate-200 block">
+              <label htmlFor="job-cover-letter-input" className="font-bold text-slate-200 block">
                 Cover Letter / Message to Recruiter <span className="text-slate-400 font-normal">(Optional)</span>
               </label>
               <span className="text-[11px] font-mono text-slate-400">
@@ -188,15 +187,17 @@ export const JobApplyModal = ({
               </span>
             </div>
 
-            <textarea
+            <Textarea
+              id="job-cover-letter-input"
               rows={5}
               maxLength={5000}
               placeholder="Introduce yourself and explain why you're a great fit for this position..."
               value={coverLetter}
               onChange={(e) => setCoverLetter(e.target.value)}
-              className="w-full rounded-2xl bg-slate-950/80 border border-slate-800 p-3.5 text-xs text-slate-200 focus:border-indigo-500 outline-none transition-colors font-sans resize-none"
+              className="resize-none font-sans text-xs"
             />
           </div>
+
 
           {/* Action Buttons */}
           <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-3">

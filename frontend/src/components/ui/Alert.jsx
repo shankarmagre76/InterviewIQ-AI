@@ -34,7 +34,12 @@ export const Alert = ({
   const config = alertConfig[variant] || alertConfig.info;
 
   return (
-    <div className={`rounded-xl border p-4 flex items-start gap-3.5 backdrop-blur-md ${config.bg} ${className}`.trim()}>
+    <div
+      role="alert"
+      aria-live="polite"
+      className={`rounded-xl border p-4 flex items-start gap-3.5 backdrop-blur-md ${config.bg} ${className}`.trim()}
+    >
+
       {config.icon}
       <div className="flex-1 text-sm leading-relaxed">
         {title && <h4 className={`font-semibold mb-1 ${config.titleColor}`}>{title}</h4>}

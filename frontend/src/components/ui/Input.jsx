@@ -37,6 +37,7 @@ export const Input = React.forwardRef(({
           id={inputId}
           type={type}
           disabled={disabled}
+          aria-invalid={Boolean(error)}
           className={`
             w-full rounded-xl bg-slate-900/80 border text-slate-100 placeholder-slate-500 text-sm py-2.5 transition-all duration-200
             ${leftIcon ? 'pl-10' : 'pl-4'}
@@ -51,6 +52,7 @@ export const Input = React.forwardRef(({
           `.trim()}
           {...props}
         />
+
 
         {rightIcon && (
           <div className="absolute right-3.5 text-slate-400 flex items-center justify-center">

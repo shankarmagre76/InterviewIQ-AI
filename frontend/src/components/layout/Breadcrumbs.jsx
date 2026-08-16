@@ -12,16 +12,22 @@ const segmentLabels = {
   applications: 'Applications',
   'saved-jobs': 'Saved Jobs',
   interviews: 'Mock Interviews',
+  setup: 'Interview Setup',
+  lobby: 'Session Lobby',
   live: 'Live Session',
   result: 'Evaluation Result',
+  history: 'History & Analytics',
+  start: 'Start Interview',
   roadmap: 'Learning Roadmap',
   notifications: 'Notifications',
   settings: 'Settings',
+  onboarding: 'Candidate Onboarding',
   'design-system': 'Design System',
   admin: 'Admin Portal',
   users: 'Users',
   analytics: 'Analytics',
 };
+
 
 export const Breadcrumbs = () => {
   const location = useLocation();

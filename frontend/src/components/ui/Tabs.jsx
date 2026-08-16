@@ -22,7 +22,8 @@ export const Tabs = ({
   return (
     <div className={`w-full flex flex-col gap-6 ${className}`.trim()}>
       {/* Tab Header Bar */}
-      <div className="flex items-center gap-1 border-b border-slate-800/80 overflow-x-auto scrollbar-none pb-0.5">
+      <div className="flex items-center gap-1 border-b border-slate-800/80 overflow-x-auto scrollbar-none pb-0.5" role="tablist">
+
         {tabs.map((tab) => {
           const isActive = currentTab === tab.id;
           return (

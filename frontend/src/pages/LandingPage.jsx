@@ -5,30 +5,31 @@ import { Button } from '../components/ui/Button';
 
 export const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col justify-between p-6 sm:p-12 relative overflow-hidden">
+    <div className="min-h-screen bg-[#080c14] text-slate-100 flex flex-col justify-between p-4 sm:p-6 lg:p-12 relative overflow-hidden">
       {/* Background Decorative Glow Effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-cyan-600/15 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header Bar */}
-      <header className="flex justify-between items-center z-10 max-w-6xl mx-auto w-full border-b border-slate-800/80 pb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <Sparkles className="w-6 h-6 text-white" />
+      <header className="flex justify-between items-center z-10 max-w-6xl mx-auto w-full border-b border-slate-800/80 pb-4 sm:pb-6">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/25">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-bold text-white tracking-tight">
+          <span className="text-lg sm:text-xl font-bold text-white tracking-tight">
             InterviewIQ <span className="text-indigo-400">AI</span>
           </span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link to="/login">
-            <Button variant="ghost" size="sm">Sign In</Button>
+            <Button variant="ghost" size="xs" className="sm:text-xs sm:px-3 sm:py-1.5">Sign In</Button>
           </Link>
           <Link to="/register">
-            <Button variant="primary" size="sm">Get Started Free</Button>
+            <Button variant="primary" size="xs" className="sm:text-xs sm:px-3.5 sm:py-1.5">Get Started</Button>
           </Link>
         </div>
       </header>
+
 
       {/* Main Hero */}
       <main className="my-auto z-10 max-w-4xl mx-auto text-center py-16">
