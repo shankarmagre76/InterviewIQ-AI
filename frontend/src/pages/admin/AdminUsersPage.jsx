@@ -7,8 +7,8 @@ import { UserFilters } from '../../components/admin/UserFilters.jsx';
 import { UserPagination } from '../../components/admin/UserPagination.jsx';
 import { ErrorState } from '../../components/ui/ErrorState.jsx';
 import { Button } from '../../components/ui/Button.jsx';
-import { adminService } from '../../services/adminService.js';
-import { Users, UserCheck, UserX, ShieldAlert, RefreshCw, AlertCircle } from 'lucide-react';
+import { parseApiError } from '../../utils/helpers.js';
+import { Users, UserCheck, ShieldAlert, RefreshCw, AlertCircle } from 'lucide-react';
 
 /**
  * AdminUsersPage Component (F10.4)
@@ -99,7 +99,7 @@ export const AdminUsersPage = () => {
       );
     } catch (err) {
       console.error('Failed to update user status:', err);
-      setActionError('Failed to update user status. Please try again.');
+      setActionError(parseApiError(err));
       fetchUsers();
     }
   };
@@ -114,7 +114,7 @@ export const AdminUsersPage = () => {
       );
     } catch (err) {
       console.error('Failed to update user role:', err);
-      setActionError('Failed to update user role. Please try again.');
+      setActionError(parseApiError(err));
       fetchUsers();
     }
   };
@@ -128,7 +128,7 @@ export const AdminUsersPage = () => {
       setPagination((prev) => ({ ...prev, total: Math.max(0, prev.total - 1) }));
     } catch (err) {
       console.error('Failed to delete user:', err);
-      setActionError('Failed to delete user account. Please try again.');
+      setActionError(parseApiError(err));
       fetchUsers();
     }
   };

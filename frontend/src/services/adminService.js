@@ -112,6 +112,10 @@ export const adminService = {
     return response.data;
   },
 
+  async getApplicationStatistics(params = {}) {
+    return this.getApplicationStats(params);
+  },
+
   async getApplicationById(id) {
     const response = await api.get(API_ENDPOINTS.ADMIN.APPLICATION_BY_ID(id));
     return response.data;
