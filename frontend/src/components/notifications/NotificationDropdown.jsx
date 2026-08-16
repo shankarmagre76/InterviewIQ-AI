@@ -85,18 +85,29 @@ export const formatTimeAgo = (dateString) => {
 };
 
 /**
- * Navigation target router for notification entity
+ * Resolves target route for a notification based on backend polymorphic relationship
+ * (relatedEntity and relatedEntityId) and notification type.
+ *
+ * @param {Object} notif - Notification document
+ * @returns {string|null} Target URL path string or null if no navigation should occur
  */
-export const getNotificationLink = (notif) => {
-  const { type, relatedEntity, relatedEntityId } = notif;
+export const resolveNotificationRoute = (notif) => {
+  if (!notif) return null;
+
+  const { relatedEntity, relatedEntityId, type } = notif;
+
+  // 1. Resume / ATS Analysis
   if (
-    relatedEntity === 'LearningRoadmap' ||
-    type === 'ROADMAP_UPDATE' ||
-    type === 'ROADMAP_MILESTONE' ||
-    type === 'LEARNING_TASK'
+    relatedEntity === 'ResumeAnalysis' ||
+    type === 'RESUME_ANALYSIS'
   ) {
-    return '/roadmap';
+    return '/resume/analysis';
   }
+  if (relatedEntity === 'Resume' || type === 'RESUME_IMPROVEMENT') {
+    return '/resume';
+  }
+
+  // 2. Mock Interview
   if (
     relatedEntity === 'Interview' ||
     type === 'INTERVIEW_RESULT' ||
@@ -104,26 +115,45 @@ export const getNotificationLink = (notif) => {
   ) {
     return relatedEntityId ? `/interviews/${relatedEntityId}/result` : '/interviews';
   }
-  if (
-    relatedEntity === 'Resume' ||
-    relatedEntity === 'ResumeAnalysis' ||
-    type === 'RESUME_ANALYSIS' ||
-    type === 'RESUME_IMPROVEMENT'
-  ) {
-    return '/resume';
-  }
+
+  // 3. Job Application
   if (
     relatedEntity === 'Application' ||
     type === 'APPLICATION_STATUS' ||
     type === 'APPLICATION_DEADLINE'
   ) {
-    return '/applications';
+    return relatedEntityId ? `/applications/${relatedEntityId}` : '/applications';
   }
-  return '/notifications';
+
+  // 4. Job Posting
+  if (relatedEntity === 'Job') {
+    return relatedEntityId ? `/jobs/${relatedEntityId}` : '/jobs';
+  }
+
+  // 5. Learning Roadmap & Tasks
+  if (
+    relatedEntity === 'LearningRoadmap' ||
+    type === 'ROADMAP_UPDATE' ||
+    type === 'ROADMAP_MILESTONE'
+  ) {
+    return relatedEntityId ? `/roadmap/${relatedEntityId}` : '/roadmap';
+  }
+  if (relatedEntity === 'LearningTask' || type === 'LEARNING_TASK') {
+    return '/roadmap';
+  }
+
+  // 6. System Events or no related resource
+  if (relatedEntity === 'System' || type === 'SYSTEM' || !relatedEntity) {
+    return null; // Do not attempt navigation for pure system alerts
+  }
+
+  return null;
 };
 
+export const getNotificationLink = resolveNotificationRoute;
+
 /**
- * NotificationDropdown Component (F9.3)
+ * NotificationDropdown Component (F9.3 & F9.7)
  * Displays compact recent notifications inbox opened from Notification Bell.
  *
  * @param {Object} props
@@ -226,7 +256,7 @@ export const NotificationDropdown = ({
     }
   };
 
-  // Item click navigation & auto-read
+  // Item click action handler (F9.7)
   const handleItemClick = async (notif) => {
     if (!notif.isRead) {
       try {
@@ -237,8 +267,12 @@ export const NotificationDropdown = ({
       }
     }
     onClose();
-    const link = getNotificationLink(notif);
-    navigate(link);
+
+    // Resolve route and navigate if related resource exists
+    const targetRoute = resolveNotificationRoute(notif);
+    if (targetRoute) {
+      navigate(targetRoute);
+    }
   };
 
   if (!isOpen) return null;
@@ -252,7 +286,7 @@ export const NotificationDropdown = ({
       aria-label="Notifications inbox dropdown"
       tabIndex={-1}
       className={`
-        absolute ${alignClass} mt-2 w-80 sm:w-96 rounded-2xl glass-panel shadow-2xl
+        absolute ${alignClass} mt-2 w-[calc(100vw-2rem)] max-w-[380px] sm:w-96 rounded-2xl glass-panel shadow-2xl
         shadow-black/80 border border-slate-800 bg-slate-950/95 backdrop-blur-xl z-50
         overflow-hidden flex flex-col transition-all animate-in fade-in zoom-in-95 duration-150
       `.trim()}
@@ -331,6 +365,7 @@ export const NotificationDropdown = ({
           notifications.map((notif) => {
             const isUnread = !notif.isRead;
             const icon = getNotificationIcon(notif.type);
+            const targetRoute = resolveNotificationRoute(notif);
 
             return (
               <div
@@ -383,10 +418,12 @@ export const NotificationDropdown = ({
                       {notif.priority}
                     </Badge>
 
-                    <span className="text-[10px] text-indigo-400 group-hover:text-indigo-300 flex items-center gap-1 font-medium ml-auto">
-                      <span>View</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </span>
+                    {targetRoute && (
+                      <span className="text-[10px] text-indigo-400 group-hover:text-indigo-300 flex items-center gap-1 font-medium ml-auto">
+                        <span>View</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </span>
+                    )}
                   </div>
                 </div>
 

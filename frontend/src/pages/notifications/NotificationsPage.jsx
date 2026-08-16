@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Bell,
   CheckCheck,
@@ -9,6 +10,10 @@ import {
   AlertCircle,
   Inbox,
   ShieldAlert,
+  FileText,
+  Video,
+  Briefcase,
+  Sparkles,
 } from 'lucide-react';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { Button } from '../../components/ui/Button.jsx';
@@ -18,9 +23,29 @@ import { NotificationList } from '../../components/notifications/index.js';
 import { NOTIFICATION_TYPES } from '../../services/notificationService.js';
 import { useNotifications } from '../../hooks/useNotifications.js';
 
+/**
+ * Filter Categories mapped to supported backend notification query types
+ */
+export const NOTIFICATION_CATEGORIES = [
+  { id: 'all', label: 'All', icon: Inbox, type: '' },
+  { id: 'unread', label: 'Unread', icon: Bell, type: '' },
+  { id: 'resume', label: 'Resume', icon: FileText, type: 'RESUME_ANALYSIS' },
+  { id: 'interview', label: 'Interview', icon: Video, type: 'INTERVIEW_RESULT' },
+  { id: 'applications', label: 'Applications', icon: Briefcase, type: 'APPLICATION_STATUS' },
+  { id: 'learning', label: 'Learning', icon: Sparkles, type: 'ROADMAP_UPDATE' },
+  { id: 'system', label: 'System', icon: ShieldAlert, type: 'SYSTEM' },
+];
+
 export const NotificationsPage = () => {
-  const [activeTab, setActiveTab] = useState('all'); // 'all' | 'unread'
-  const [selectedType, setSelectedType] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Read URL query parameters to preserve filter state on refresh / deep link
+  const categoryParam = searchParams.get('category') || 'all';
+  const typeParam = searchParams.get('type') || '';
+  const isReadParam = categoryParam === 'unread' ? false : null;
+
+  const [activeCategory, setActiveCategory] = useState(categoryParam);
+  const [selectedType, setSelectedType] = useState(typeParam);
 
   const {
     notifications,
@@ -39,21 +64,52 @@ export const NotificationsPage = () => {
     initialPage: 1,
     initialLimit: 10,
     initialType: selectedType,
-    initialIsRead: activeTab === 'unread' ? false : null,
+    initialIsRead: isReadParam,
   });
 
   const [isMarkingAll, setIsMarkingAll] = useState(false);
   const [actionError, setActionError] = useState(null);
 
-  const handleTabChange = (newTab) => {
-    setActiveTab(newTab);
-    setIsReadFilter(newTab === 'unread' ? false : null);
+  // Sync state when URL search params change
+  useEffect(() => {
+    const urlCategory = searchParams.get('category') || 'all';
+    const urlType = searchParams.get('type') || '';
+
+    setActiveCategory(urlCategory);
+    setSelectedType(urlType);
+
+    const isReadVal = urlCategory === 'unread' ? false : null;
+
+    fetchNotifications({
+      page: 1,
+      type: urlType,
+      isRead: isReadVal,
+    });
+  }, [searchParams, fetchNotifications]);
+
+  // Category Tab Click Handler (updates URL params)
+  const handleCategoryClick = (cat) => {
+    setActiveCategory(cat.id);
+    const newType = cat.type || '';
+    setSelectedType(newType);
+
+    const newParams = {};
+    if (cat.id !== 'all') newParams.category = cat.id;
+    if (newType) newParams.type = newType;
+
+    setSearchParams(newParams);
   };
 
-  const handleTypeChange = (e) => {
-    const newType = e.target.value;
-    setSelectedType(newType);
-    setType(newType);
+  // Specific Type Select Dropdown Change Handler
+  const handleTypeSelect = (e) => {
+    const typeVal = e.target.value;
+    setSelectedType(typeVal);
+
+    const newParams = {};
+    if (activeCategory !== 'all') newParams.category = activeCategory;
+    if (typeVal) newParams.type = typeVal;
+
+    setSearchParams(newParams);
   };
 
   const handleMarkAsReadSingle = async (notifId) => {
@@ -92,7 +148,7 @@ export const NotificationsPage = () => {
       {/* Page Header */}
       <PageHeader
         title="Notification Center"
-        description="Review AI evaluation feedback, ATS resume analysis alerts, and learning roadmap updates."
+        description="Filter and manage your candidate notifications across resume analysis, mock interviews, applications, and learning roadmaps."
         action={
           unreadCount > 0 ? (
             <Button
@@ -116,7 +172,7 @@ export const NotificationsPage = () => {
             <Inbox className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs text-slate-400 font-medium">Total Inbox Count</p>
+            <p className="text-xs text-slate-400 font-medium">Filtered Results Count</p>
             <h4 className="text-lg font-bold text-slate-100">{pagination.total || notifications.length}</h4>
           </div>
         </Card>
@@ -144,82 +200,77 @@ export const NotificationsPage = () => {
         </Card>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="p-4 rounded-2xl glass-panel border border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        {/* Filter Tabs: [ All ] [ Unread ] */}
-        <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-900/80 border border-slate-800">
-          <button
-            type="button"
-            onClick={() => handleTabChange('all')}
-            className={`
-              px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2
-              ${activeTab === 'all'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20 font-bold'
-                : 'text-slate-400 hover:text-slate-200'
-              }
-            `.trim()}
-          >
-            <span>All Notifications</span>
-            <Badge variant={activeTab === 'all' ? 'primary' : 'neutral'} style="soft" size="sm">
-              {pagination.total}
-            </Badge>
-          </button>
+      {/* Category Pills Filter Bar (F9.6 Server-Side Filtering) */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 custom-scrollbar">
+        {NOTIFICATION_CATEGORIES.map((cat) => {
+          const Icon = cat.icon;
+          const isActive = activeCategory === cat.id;
 
-          <button
-            type="button"
-            onClick={() => handleTabChange('unread')}
-            className={`
-              px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2
-              ${activeTab === 'unread'
-                ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/20 font-bold'
-                : 'text-slate-400 hover:text-slate-200'
-              }
-            `.trim()}
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => handleCategoryClick(cat)}
+              className={`
+                px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all cursor-pointer flex items-center gap-2 border
+                ${isActive
+                  ? 'bg-indigo-600/90 text-white border-indigo-500 shadow-md shadow-indigo-500/20 font-bold'
+                  : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:bg-slate-900/80 hover:text-slate-200'
+                }
+              `.trim()}
+            >
+              <Icon className="w-4 h-4 shrink-0" />
+              <span>{cat.label}</span>
+              {cat.id === 'unread' && unreadCount > 0 && (
+                <Badge variant="danger" style="soft" size="sm" className="px-1.5 py-0 text-[10px]">
+                  {unreadCount}
+                </Badge>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Filter Control Toolbar */}
+      <div className="p-4 rounded-2xl glass-panel border border-slate-800 bg-slate-950/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* Specific Backend Enum Dropdown */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+          <span className="text-xs text-slate-400 font-medium whitespace-nowrap">Filter by Backend Enum:</span>
+          <select
+            value={selectedType}
+            onChange={handleTypeSelect}
+            className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer flex-1 sm:flex-initial"
           >
-            <span>Unread Only</span>
-            {unreadCount > 0 && (
-              <Badge variant="danger" style="soft" size="sm">
-                {unreadCount}
-              </Badge>
-            )}
-          </button>
+            <option value="">All Enum Types</option>
+            {Object.keys(NOTIFICATION_TYPES).map((typeKey) => (
+              <option key={typeKey} value={typeKey}>
+                {typeKey.replace(/_/g, ' ')}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Type Filter & Refresh */}
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-400" />
-            <select
-              value={selectedType}
-              onChange={handleTypeChange}
-              className="bg-slate-900 border border-slate-800 text-slate-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
-            >
-              <option value="">All Types</option>
-              {Object.keys(NOTIFICATION_TYPES).map((typeKey) => (
-                <option key={typeKey} value={typeKey}>
-                  {typeKey.replace(/_/g, ' ')}
-                </option>
-              ))}
-            </select>
-          </div>
-
+        {/* Refresh Button */}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => fetchNotifications()}
             title="Refresh notifications"
-            className="p-2 text-slate-400 hover:text-slate-100 cursor-pointer"
+            className="p-2 text-slate-400 hover:text-slate-100 cursor-pointer flex items-center gap-1.5"
           >
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+            <span className="text-xs">Refresh</span>
           </Button>
         </div>
       </div>
 
-      {/* Error Banners */}
-      {(error || actionError) && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-3">
+      {/* Action Error Banner if single mutation fails */}
+      {actionError && (
+        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-3 animate-in fade-in">
           <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
-          <p className="flex-1">{error || actionError}</p>
+          <p className="flex-1">{actionError}</p>
           <Button variant="ghost" size="sm" onClick={() => fetchNotifications()} className="text-xs text-rose-300 hover:underline">
             Retry
           </Button>
@@ -230,9 +281,11 @@ export const NotificationsPage = () => {
       <NotificationList
         notifications={notifications}
         isLoading={isLoading}
+        error={error ? "Couldn't load your notifications." : null}
         onMarkAsRead={handleMarkAsReadSingle}
         onDelete={handleDelete}
-        activeTab={activeTab}
+        activeTab={activeCategory}
+        filterType={selectedType}
         onRefresh={() => fetchNotifications()}
       />
 

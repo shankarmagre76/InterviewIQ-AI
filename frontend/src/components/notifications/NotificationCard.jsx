@@ -17,8 +17,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { Badge } from '../ui/Badge.jsx';
-import { Button } from '../ui/Button.jsx';
-import { getNotificationLink, formatTimeAgo } from './NotificationDropdown.jsx';
+import { resolveNotificationRoute, formatTimeAgo } from './NotificationDropdown.jsx';
 
 /**
  * Dynamic Icon Mapper per Notification Type
@@ -99,7 +98,7 @@ const getPriorityVariant = (priority) => {
 };
 
 /**
- * Full Date Formatter (e.g. "Today at 2:30 PM", "Yesterday at 10:15 AM", or "Aug 15, 2026")
+ * Full Date Formatter for Screen Readers and Tooltips
  */
 export const formatFullDate = (dateString) => {
   if (!dateString) return '';
@@ -127,13 +126,17 @@ export const formatFullDate = (dateString) => {
 };
 
 /**
- * NotificationCard Component (F9.4)
- * Individual candidate notification card with visual read/unread state, action triggers, and metadata.
+ * NotificationCard Component (F9.4, F9.7, & F9.11)
+ * Accessible, mobile-optimized candidate notification card featuring:
+ * - Explicit text badge + color + dot for read/unread state (doesn't rely only on color)
+ * - Semantic <time> HTML tag for screen readers
+ * - Minimum 44x44px touch targets for mobile accessibility
+ * - Visible focus rings for keyboard navigation
  *
  * @param {Object} props
- * @param {Object} props.notification - Notification object document
- * @param {Function} [props.onMarkAsRead] - Handler for marking single notification read
- * @param {Function} [props.onDelete] - Handler for deleting notification
+ * @param {Object} props.notification - Notification document
+ * @param {Function} [props.onMarkAsRead] - Mark read callback
+ * @param {Function} [props.onDelete] - Delete callback
  */
 export const NotificationCard = ({
   notification,
@@ -151,7 +154,7 @@ export const NotificationCard = ({
   const typeLabel = formatNotificationType(notification.type);
   const fullDateLabel = formatFullDate(notification.createdAt);
   const relativeTime = formatTimeAgo(notification.createdAt);
-  const targetLink = getNotificationLink(notification);
+  const targetRoute = resolveNotificationRoute(notification);
 
   const handleMarkReadClick = async (e) => {
     e.stopPropagation();
@@ -183,14 +186,21 @@ export const NotificationCard = ({
     if (isUnread && onMarkAsRead) {
       onMarkAsRead(notification._id);
     }
-    navigate(targetLink);
+    if (targetRoute) {
+      navigate(targetRoute);
+    }
   };
+
+  const cardAccessibleLabel = `Notification: ${notification.title}. Status: ${
+    isUnread ? 'Unread' : 'Read'
+  }. Category: ${typeLabel}. Priority: ${notification.priority}. Time: ${fullDateLabel}.`;
 
   return (
     <div
       onClick={handleCardClick}
       role="button"
       tabIndex={0}
+      aria-label={cardAccessibleLabel}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
@@ -199,45 +209,60 @@ export const NotificationCard = ({
       }}
       className={`
         group relative p-4 sm:p-5 rounded-2xl border transition-all duration-200 cursor-pointer
-        flex flex-col sm:flex-row sm:items-start gap-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500
+        flex flex-col sm:flex-row sm:items-start gap-4 focus-visible:outline-none focus-visible:ring-2
+        focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950
         ${isUnread
           ? 'bg-slate-900/90 border-indigo-500/40 shadow-lg shadow-indigo-950/30'
           : 'bg-slate-950/60 border-slate-800/80 hover:bg-slate-900/60 hover:border-slate-700/60 opacity-95'
         }
       `.trim()}
     >
-      {/* Unread Glow Indicator */}
+      {/* Unread Visual & Screen-Reader Indicator */}
       {isUnread && (
         <span
           className="absolute -left-1 top-6 w-2.5 h-2.5 rounded-full bg-indigo-500 shadow-lg shadow-indigo-500 animate-pulse"
-          aria-label="Unread notification indicator"
+          aria-hidden="true"
         />
       )}
 
-      {/* Icon Badge */}
+      {/* Type Icon Badge */}
       <div className="w-10 h-10 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 shadow-md group-hover:scale-105 transition-transform">
         {icon}
       </div>
 
-      {/* Main Content */}
+      {/* Main Content Body */}
       <div className="flex-1 min-w-0 space-y-1.5">
         <div className="flex items-start justify-between gap-2 flex-wrap sm:flex-nowrap">
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className={`text-sm ${isUnread ? 'text-white font-bold' : 'text-slate-200 font-semibold'}`}>
               {notification.title}
             </h3>
+
+            {/* Read/Unread Text Badge for non-color-only accessibility */}
+            <Badge
+              variant={isUnread ? 'primary' : 'neutral'}
+              style="soft"
+              size="sm"
+              className="text-[10px] uppercase tracking-wider font-bold"
+            >
+              {isUnread ? 'Unread' : 'Read'}
+            </Badge>
+
             <Badge variant="neutral" style="soft" size="sm" className="text-[10px]">
               {typeLabel}
             </Badge>
+            
             <Badge variant={getPriorityVariant(notification.priority)} style="soft" size="sm" className="text-[10px]">
               {notification.priority}
             </Badge>
           </div>
 
-          {/* Timestamp */}
+          {/* Semantic HTML <time> Tag */}
           <div className="flex items-center gap-1.5 text-slate-400 text-xs shrink-0">
-            <Clock className="w-3.5 h-3.5" />
-            <span title={fullDateLabel}>{relativeTime || fullDateLabel}</span>
+            <Clock className="w-3.5 h-3.5" aria-hidden="true" />
+            <time dateTime={notification.createdAt} title={fullDateLabel}>
+              {relativeTime || fullDateLabel}
+            </time>
           </div>
         </div>
 
@@ -246,29 +271,32 @@ export const NotificationCard = ({
           {notification.message}
         </p>
 
+        {/* Full timestamp fallback for assistive tech */}
         <p className="text-[11px] text-slate-500 pt-0.5">
-          {fullDateLabel}
+          <time dateTime={notification.createdAt}>{fullDateLabel}</time>
         </p>
 
-        {/* Card Actions */}
-        <div className="flex items-center gap-3 pt-2">
-          <span className="text-xs font-semibold text-indigo-400 group-hover:text-indigo-300 flex items-center gap-1">
-            <span>View Resource</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </span>
-        </div>
+        {/* Card Related Resource Link */}
+        {targetRoute && (
+          <div className="flex items-center gap-3 pt-2">
+            <span className="text-xs font-semibold text-indigo-400 group-hover:text-indigo-300 flex items-center gap-1">
+              <span>View Resource</span>
+              <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+            </span>
+          </div>
+        )}
       </div>
 
-      {/* Quick Action Button Controls */}
-      <div className="flex items-center gap-1.5 self-end sm:self-start shrink-0">
+      {/* Touch-Friendly Quick Action Button Controls (min 44x44px target) */}
+      <div className="flex items-center gap-2 self-end sm:self-start shrink-0 pt-1 sm:pt-0">
         {isUnread && (
           <button
             type="button"
             onClick={handleMarkReadClick}
             disabled={isMarking}
             title="Mark as read"
-            aria-label="Mark notification as read"
-            className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            aria-label={`Mark "${notification.title}" as read`}
+            className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 transition-colors flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
             {isMarking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           </button>
@@ -279,8 +307,8 @@ export const NotificationCard = ({
           onClick={handleDeleteClick}
           disabled={isDeleting}
           title="Delete notification"
-          aria-label="Delete notification"
-          className="p-2 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
+          aria-label={`Delete notification "${notification.title}"`}
+          className="w-10 h-10 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center justify-center cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500"
         >
           {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
         </button>
