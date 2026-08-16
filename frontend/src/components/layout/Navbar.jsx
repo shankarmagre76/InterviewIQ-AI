@@ -5,34 +5,16 @@ import { useAuth } from '../../hooks/useAuth';
 import { Dropdown } from '../ui/Dropdown';
 import { Badge } from '../ui/Badge';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
-import { notificationService } from '../../services/notificationService';
+import { NotificationBell, NotificationDropdown } from '../notifications/index.js';
 
-export const Navbar = ({ onMobileToggle }) => {
+export const Navbar = ({ onMobileToggle, onNotificationClick, isNotificationOpen }) => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
-    const fetchUnread = async () => {
-      if (isAuthenticated) {
-        try {
-          const res = await notificationService.getUnreadNotifications();
-          const count = res?.data?.count || res?.count || (Array.isArray(res?.data) ? res.data.length : 0);
-          if (isMounted) setUnreadCount(count);
-        } catch {
-          if (isMounted) setUnreadCount(0);
-        }
-      }
-    };
-
-    fetchUnread();
-    return () => {
-      isMounted = false;
-    };
-  }, [isAuthenticated]);
+  const isDropdownActive = isNotificationOpen !== undefined ? isNotificationOpen : isNotifDropdownOpen;
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -73,20 +55,24 @@ export const Navbar = ({ onMobileToggle }) => {
 
         {/* Right: Notifications & User Profile Menu */}
         <div className="flex items-center gap-3 sm:gap-4">
-          {/* Notification Bell */}
+          {/* Notification Bell & Dropdown */}
           {isAuthenticated && (
-            <Link
-              to="/notifications"
-              aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
-              className="relative p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-900/80 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 cursor-pointer"
-            >
-              <Bell className="w-5 h-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-md">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </Link>
+            <div className="relative">
+              <NotificationBell
+                isOpen={isDropdownActive}
+                onClick={
+                  onNotificationClick ||
+                  (() => setIsNotifDropdownOpen((prev) => !prev))
+                }
+              />
+              <NotificationDropdown
+                isOpen={isDropdownActive}
+                onClose={() => {
+                  setIsNotifDropdownOpen(false);
+                }}
+                align="right"
+              />
+            </div>
           )}
 
           {/* User Profile Dropdown */}
