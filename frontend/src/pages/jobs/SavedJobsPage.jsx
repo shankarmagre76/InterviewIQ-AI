@@ -126,12 +126,16 @@ export const SavedJobsPage = () => {
       {!loading && !error && jobsList.length === 0 ? (
         <div className="py-12 bg-slate-900/60 border border-slate-800 rounded-3xl p-8 text-center">
           <EmptyState
-            icon={Bookmark}
-            title="No saved jobs yet."
-            description="Bookmark positions that interest you to review and apply later when you're ready."
-            actionLabel="Explore Jobs"
-            onAction={() => navigate('/jobs')}
+            icon={<Bookmark className="w-8 h-8 text-indigo-400" />}
+            title="No Saved Jobs Yet"
+            description="Bookmark target engineering positions to review application deadlines, track salary benchmarks, and submit tailored applications when ready."
+            primaryAction={{
+              label: 'Explore Open Jobs',
+              icon: <Compass className="w-4 h-4" />,
+              onClick: () => navigate('/jobs'),
+            }}
           />
+
         </div>
       ) : (
         <JobList

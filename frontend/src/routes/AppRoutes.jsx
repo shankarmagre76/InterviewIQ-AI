@@ -12,7 +12,8 @@ import { AdminRoute } from './AdminRoute';
 import { PublicRoute } from './PublicRoute';
 
 // UI Fallback
-import { LoadingState } from '../components/ui/LoadingState';
+import { PageLoader } from '../components/ui/LoadingState';
+
 
 // Public Pages (Lazy Loaded)
 const LandingPage = lazy(() => import('../pages/LandingPage'));
@@ -62,13 +63,8 @@ const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 
 export const AppRoutes = () => {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-[#080c14] flex items-center justify-center p-6">
-          <LoadingState message="Loading module..." />
-        </div>
-      }
-    >
+    <Suspense fallback={<PageLoader />}>
+
       <Routes>
         {/* Public Landing Page */}
         <Route path="/" element={<LandingPage />} />
