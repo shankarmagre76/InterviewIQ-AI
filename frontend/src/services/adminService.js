@@ -1,5 +1,5 @@
-import { api } from './api';
-import { API_ENDPOINTS } from '../constants/appConstants';
+import { api } from './api.js';
+import { API_ENDPOINTS } from '../constants/appConstants.js';
 
 export const adminService = {
   // System Health & Dashboard

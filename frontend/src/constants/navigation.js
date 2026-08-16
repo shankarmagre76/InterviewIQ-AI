@@ -16,4 +16,6 @@ export const ADMIN_NAV_ITEMS = [
   { path: '/admin/jobs', label: 'Jobs', icon: 'Briefcase' },
   { path: '/admin/applications', label: 'Applications', icon: 'FileCheck' },
   { path: '/admin/analytics', label: 'Analytics', icon: 'BarChart3' },
+  { path: '/admin/audit-logs', label: 'Audit Logs', icon: 'ShieldAlert' },
+  { path: '/admin/notifications', label: 'Announcements', icon: 'Bell' },
 ];

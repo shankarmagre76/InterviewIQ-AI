@@ -52,6 +52,7 @@ import DesignSystemPage from '../pages/DesignSystemPage';
 // Admin Pages
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage';
 import AdminUsersPage from '../pages/admin/AdminUsersPage';
+import AdminUserDetailsPage from '../pages/admin/AdminUserDetailsPage';
 import AdminCompaniesPage from '../pages/admin/AdminCompaniesPage';
 import AdminJobsPage from '../pages/admin/AdminJobsPage';
 import AdminApplicationsPage from '../pages/admin/AdminApplicationsPage';
@@ -120,6 +121,7 @@ export const AppRoutes = () => {
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
+          <Route path="/admin/users/:id" element={<AdminUserDetailsPage />} />
           <Route path="/admin/companies" element={<AdminCompaniesPage />} />
           <Route path="/admin/jobs" element={<AdminJobsPage />} />
           <Route path="/admin/applications" element={<AdminApplicationsPage />} />
