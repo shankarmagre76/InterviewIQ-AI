@@ -414,6 +414,169 @@ export const experienceIdParamValidation = [
 ];
 
 /**
+ * Validation rules for adding a project record to profile
+ */
+export const addProjectValidation = [
+  body('title')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Project title must be between 1 and 100 characters'),
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Project name must be between 1 and 100 characters'),
+  body('description')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Description cannot exceed 1000 characters'),
+  body('role')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Role title cannot exceed 100 characters'),
+  body('githubUrl')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('GitHub URL must be a valid URL'),
+  body('liveUrl')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('Live URL must be a valid URL'),
+  body('projectType')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isIn(['Personal', 'Academic', 'Professional', 'Open Source', ''])
+    .withMessage('Invalid project type choice'),
+];
+
+/**
+ * Validation rules for updating a project record in profile
+ */
+export const updateProjectValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid project ID format'),
+  body('title')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Project title must be between 1 and 100 characters'),
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Project name must be between 1 and 100 characters'),
+  body('description')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Description cannot exceed 1000 characters'),
+  body('githubUrl')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('GitHub URL must be a valid URL'),
+  body('liveUrl')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('Live URL must be a valid URL'),
+  body('projectType')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isIn(['Personal', 'Academic', 'Professional', 'Open Source', ''])
+    .withMessage('Invalid project type choice'),
+];
+
+/**
+ * Validation rules for project ID URL parameter
+ */
+export const projectIdParamValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid project ID format'),
+];
+
+/**
+ * Validation rules for adding a certification record to profile
+ */
+export const addCertificationValidation = [
+  body('title')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Certification name must be between 1 and 100 characters'),
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Certification name must be between 1 and 100 characters'),
+  body('issuingOrganization')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Issuing organization must be between 1 and 100 characters'),
+  body('credentialId')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Credential ID cannot exceed 100 characters'),
+  body('credentialUrl')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('Credential URL must be a valid URL'),
+];
+
+/**
+ * Validation rules for updating a certification record in profile
+ */
+export const updateCertificationValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid certification ID format'),
+  body('title')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Certification name must be between 1 and 100 characters'),
+  body('name')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Certification name must be between 1 and 100 characters'),
+  body('issuingOrganization')
+    .optional()
+    .trim()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Issuing organization must be between 1 and 100 characters'),
+  body('credentialId')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isLength({ max: 100 })
+    .withMessage('Credential ID cannot exceed 100 characters'),
+  body('credentialUrl')
+    .optional({ checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('Credential URL must be a valid URL'),
+];
+
+/**
+ * Validation rules for certification ID URL parameter
+ */
+export const certificationIdParamValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid certification ID format'),
+];
+
+/**
  * Validation & Sanitization rules for updating social links
  */
 export const updateSocialLinksValidation = [

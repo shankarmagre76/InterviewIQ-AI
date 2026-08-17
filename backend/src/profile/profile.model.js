@@ -237,6 +237,112 @@ const resumeSchema = new mongoose.Schema(
   { _id: false }
 );
 
+/**
+ * Certification Subdocument Schema
+ */
+const certificationSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, 'Certification name is required'],
+      trim: true,
+      maxlength: [100, 'Certification name cannot exceed 100 characters'],
+    },
+    name: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    issuingOrganization: {
+      type: String,
+      required: [true, 'Issuing organization is required'],
+      trim: true,
+      maxlength: [100, 'Issuing organization cannot exceed 100 characters'],
+    },
+    issueDate: {
+      type: Date,
+      default: null,
+    },
+    expiryDate: {
+      type: Date,
+      default: null,
+    },
+    doesNotExpire: {
+      type: Boolean,
+      default: false,
+    },
+    credentialId: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Credential ID cannot exceed 100 characters'],
+      default: '',
+    },
+    credentialUrl: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+  },
+  { _id: true }
+);
+
+/**
+ * Project Subdocument Schema
+ */
+const projectSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, 'Project title is required'],
+      trim: true,
+      maxlength: [100, 'Project title cannot exceed 100 characters'],
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Description cannot exceed 1000 characters'],
+      default: '',
+    },
+    technologies: {
+      type: [String],
+      default: [],
+    },
+    role: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Role title cannot exceed 100 characters'],
+      default: '',
+    },
+    startDate: {
+      type: Date,
+      default: null,
+    },
+    endDate: {
+      type: Date,
+      default: null,
+    },
+    current: {
+      type: Boolean,
+      default: false,
+    },
+    githubUrl: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    liveUrl: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    projectType: {
+      type: String,
+      enum: ['Personal', 'Academic', 'Professional', 'Open Source', ''],
+      default: 'Personal',
+    },
+  },
+  { _id: true }
+);
 
 /**
  * Profile Schema
@@ -332,6 +438,14 @@ const profileSchema = new mongoose.Schema(
     resume: {
       type: resumeSchema,
       default: {},
+    },
+    projects: {
+      type: [projectSchema],
+      default: [],
+    },
+    certifications: {
+      type: [certificationSchema],
+      default: [],
     },
   },
   {

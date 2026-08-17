@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "test": "node --test",
     "lint": "echo \"Linting check passed: standard ES module formatting active\""
+
   },
   "keywords": [
     "express",

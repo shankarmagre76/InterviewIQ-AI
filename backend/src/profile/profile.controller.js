@@ -192,6 +192,106 @@ export const deleteExperienceHandler = asyncHandler(async (req, res) => {
 });
 
 /* ==========================================================================
+   Projects Handlers
+   ========================================================================== */
+
+/**
+ * @desc    Add a new project to user profile
+ * @route   POST /api/v1/profile/projects
+ * @access  Private (JWT Protected)
+ */
+export const addProjectHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const projects = await profileService.addProject(userId, req.body);
+  return new ApiResponse(201, projects, 'Project added successfully').send(res);
+});
+
+/**
+ * @desc    Get all projects of logged-in user profile
+ * @route   GET /api/v1/profile/projects
+ * @access  Private (JWT Protected)
+ */
+export const getProjectsHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const projects = await profileService.getProjects(userId);
+  return new ApiResponse(200, projects, 'Projects retrieved successfully').send(res);
+});
+
+/**
+ * @desc    Update an existing project in user profile
+ * @route   PUT /api/v1/profile/projects/:id
+ * @access  Private (JWT Protected)
+ */
+export const updateProjectHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const projectId = req.params.id;
+  const updatedProject = await profileService.updateProject(userId, projectId, req.body);
+  return new ApiResponse(200, updatedProject, 'Project updated successfully').send(res);
+});
+
+/**
+ * @desc    Delete a project from user profile
+ * @route   DELETE /api/v1/profile/projects/:id
+ * @access  Private (JWT Protected)
+ */
+export const deleteProjectHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const projectId = req.params.id;
+  await profileService.deleteProject(userId, projectId);
+  return new ApiResponse(200, null, 'Project deleted successfully').send(res);
+});
+
+/* ==========================================================================
+   Certifications Handlers
+   ========================================================================== */
+
+/**
+ * @desc    Add a new certification to user profile
+ * @route   POST /api/v1/profile/certifications
+ * @access  Private (JWT Protected)
+ */
+export const addCertificationHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const certs = await profileService.addCertification(userId, req.body);
+  return new ApiResponse(201, certs, 'Certification added successfully').send(res);
+});
+
+/**
+ * @desc    Get all certifications of logged-in user profile
+ * @route   GET /api/v1/profile/certifications
+ * @access  Private (JWT Protected)
+ */
+export const getCertificationsHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const certs = await profileService.getCertifications(userId);
+  return new ApiResponse(200, certs, 'Certifications retrieved successfully').send(res);
+});
+
+/**
+ * @desc    Update an existing certification in user profile
+ * @route   PUT /api/v1/profile/certifications/:id
+ * @access  Private (JWT Protected)
+ */
+export const updateCertificationHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const certId = req.params.id;
+  const updatedCert = await profileService.updateCertification(userId, certId, req.body);
+  return new ApiResponse(200, updatedCert, 'Certification updated successfully').send(res);
+});
+
+/**
+ * @desc    Delete a certification from user profile
+ * @route   DELETE /api/v1/profile/certifications/:id
+ * @access  Private (JWT Protected)
+ */
+export const deleteCertificationHandler = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  const certId = req.params.id;
+  await profileService.deleteCertification(userId, certId);
+  return new ApiResponse(200, null, 'Certification deleted successfully').send(res);
+});
+
+/* ==========================================================================
    Social Links Handlers
    ========================================================================== */
 

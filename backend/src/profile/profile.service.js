@@ -467,6 +467,265 @@ class ProfileService {
   }
 
   /* ==========================================================================
+     Projects Sub-resource Methods
+     ========================================================================== */
+
+  /**
+   * Add a new project to user profile
+   * @param {string} userId
+   * @param {object} projectData
+   * @returns {Promise<Array>} Updated projects array
+   */
+  async addProject(userId, projectData) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to add project');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    if (projectData.title) {
+      projectData.title = projectData.title.trim();
+    } else if (projectData.name) {
+      projectData.title = projectData.name.trim();
+    }
+
+    if (typeof projectData.technologies === 'string') {
+      projectData.technologies = projectData.technologies
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+    }
+
+    profile.projects.push(projectData);
+    await profile.save();
+    return profile.projects;
+  }
+
+  /**
+   * Fetch all projects of logged-in user profile
+   * @param {string} userId
+   * @returns {Promise<Array>} List of projects
+   */
+  async getProjects(userId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to fetch projects');
+    }
+
+    const profile = await Profile.findOne({ user: userId }).select('projects');
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    return profile.projects || [];
+  }
+
+  /**
+   * Update an existing project in user profile by project ID
+   * @param {string} userId
+   * @param {string} projectId
+   * @param {object} updateData
+   * @returns {Promise<object>} Updated project subdocument
+   */
+  async updateProject(userId, projectId, updateData) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to update project');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const projectItem = profile.projects.id(projectId);
+    if (!projectItem) {
+      throw ApiError.notFound('Project record not found in user profile');
+    }
+
+    const allowedFields = [
+      'title',
+      'name',
+      'description',
+      'technologies',
+      'role',
+      'startDate',
+      'endDate',
+      'current',
+      'githubUrl',
+      'liveUrl',
+      'projectType',
+    ];
+
+    Object.keys(updateData).forEach((key) => {
+      if (allowedFields.includes(key)) {
+        if (key === 'name' || key === 'title') {
+          projectItem.title = (updateData[key] || '').trim();
+        } else if (key === 'technologies' && typeof updateData[key] === 'string') {
+          projectItem.technologies = updateData[key]
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean);
+        } else {
+          projectItem[key] = updateData[key];
+        }
+      }
+    });
+
+    await profile.save();
+    return projectItem;
+  }
+
+  /**
+   * Delete a project from user profile by project ID
+   * @param {string} userId
+   * @param {string} projectId
+   * @returns {Promise<boolean>} True upon deletion
+   */
+  async deleteProject(userId, projectId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to delete project');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const projectItem = profile.projects.id(projectId);
+    if (!projectItem) {
+      throw ApiError.notFound('Project record not found in user profile');
+    }
+
+    profile.projects.pull(projectId);
+    await profile.save();
+    return true;
+  }
+
+  /* ==========================================================================
+     Certifications Sub-resource Methods
+     ========================================================================== */
+
+  /**
+   * Add a new certification to user profile
+   * @param {string} userId
+   * @param {object} certData
+   * @returns {Promise<Array>} Updated certifications array
+   */
+  async addCertification(userId, certData) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to add certification');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    if (certData.title) {
+      certData.title = certData.title.trim();
+    } else if (certData.name) {
+      certData.title = certData.name.trim();
+    }
+
+    profile.certifications.push(certData);
+    await profile.save();
+    return profile.certifications;
+  }
+
+  /**
+   * Fetch all certifications of logged-in user profile
+   * @param {string} userId
+   * @returns {Promise<Array>} List of certifications
+   */
+  async getCertifications(userId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to fetch certifications');
+    }
+
+    const profile = await Profile.findOne({ user: userId }).select('certifications');
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    return profile.certifications || [];
+  }
+
+  /**
+   * Update an existing certification in user profile by certification ID
+   * @param {string} userId
+   * @param {string} certId
+   * @param {object} updateData
+   * @returns {Promise<object>} Updated certification subdocument
+   */
+  async updateCertification(userId, certId, updateData) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to update certification');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const certItem = profile.certifications.id(certId);
+    if (!certItem) {
+      throw ApiError.notFound('Certification record not found in user profile');
+    }
+
+    const allowedFields = [
+      'title',
+      'name',
+      'issuingOrganization',
+      'issueDate',
+      'expiryDate',
+      'doesNotExpire',
+      'credentialId',
+      'credentialUrl',
+    ];
+
+    Object.keys(updateData).forEach((key) => {
+      if (allowedFields.includes(key)) {
+        if (key === 'name' || key === 'title') {
+          certItem.title = (updateData[key] || '').trim();
+        } else {
+          certItem[key] = updateData[key];
+        }
+      }
+    });
+
+    await profile.save();
+    return certItem;
+  }
+
+  /**
+   * Delete a certification from user profile by certification ID
+   * @param {string} userId
+   * @param {string} certId
+   * @returns {Promise<boolean>} True upon deletion
+   */
+  async deleteCertification(userId, certId) {
+    if (!userId) {
+      throw ApiError.unauthorized('User ID is required to delete certification');
+    }
+
+    const profile = await Profile.findOne({ user: userId });
+    if (!profile) {
+      throw ApiError.notFound('User profile not found');
+    }
+
+    const certItem = profile.certifications.id(certId);
+    if (!certItem) {
+      throw ApiError.notFound('Certification record not found in user profile');
+    }
+
+    profile.certifications.pull(certId);
+    await profile.save();
+    return true;
+  }
+
+  /* ==========================================================================
      Social Links Methods
      ========================================================================== */
 

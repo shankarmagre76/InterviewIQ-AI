@@ -35,7 +35,8 @@ export const globalRateLimiter = rateLimit({
  */
 export const authRateLimiter = rateLimit({
   windowMs: Number(process.env.RATE_LIMIT_AUTH_WINDOW_MS) || 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'test' ? 1000 : Number(process.env.RATE_LIMIT_AUTH_MAX) || 5,
+  max: process.env.NODE_ENV === 'production' ? Number(process.env.RATE_LIMIT_AUTH_MAX) || 5 : 1000,
+
   standardHeaders: true,
   legacyHeaders: false,
   handler: rateLimitHandler('Too many authentication attempts. Please try again in 15 minutes.'),

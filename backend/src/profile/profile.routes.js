@@ -15,6 +15,14 @@ import {
   getExperienceHandler,
   updateExperienceHandler,
   deleteExperienceHandler,
+  addProjectHandler,
+  getProjectsHandler,
+  updateProjectHandler,
+  deleteProjectHandler,
+  addCertificationHandler,
+  getCertificationsHandler,
+  updateCertificationHandler,
+  deleteCertificationHandler,
   getSocialLinksHandler,
   updateSocialLinksHandler,
   getResumeHandler,
@@ -35,6 +43,12 @@ import {
   addExperienceValidation,
   updateExperienceValidation,
   experienceIdParamValidation,
+  addProjectValidation,
+  updateProjectValidation,
+  projectIdParamValidation,
+  addCertificationValidation,
+  updateCertificationValidation,
+  certificationIdParamValidation,
   updateSocialLinksValidation,
   updateResumeValidation,
   validate,
@@ -172,6 +186,70 @@ router.put('/experience/:id', updateExperienceValidation, validate, updateExperi
  * @access  Private (JWT Protected)
  */
 router.delete('/experience/:id', experienceIdParamValidation, validate, deleteExperienceHandler);
+
+/* ==========================================================================
+   Projects Sub-resource CRUD Endpoints
+   ========================================================================== */
+
+/**
+ * @desc    Add a new project record to user profile
+ * @route   POST /api/v1/profile/projects
+ * @access  Private (JWT Protected)
+ */
+router.post('/projects', addProjectValidation, validate, addProjectHandler);
+
+/**
+ * @desc    Get all project records of logged-in user profile
+ * @route   GET /api/v1/profile/projects
+ * @access  Private (JWT Protected)
+ */
+router.get('/projects', getProjectsHandler);
+
+/**
+ * @desc    Update an existing project record in user profile by project ID
+ * @route   PUT /api/v1/profile/projects/:id
+ * @access  Private (JWT Protected)
+ */
+router.put('/projects/:id', updateProjectValidation, validate, updateProjectHandler);
+
+/**
+ * @desc    Delete a project record from user profile by project ID
+ * @route   DELETE /api/v1/profile/projects/:id
+ * @access  Private (JWT Protected)
+ */
+router.delete('/projects/:id', projectIdParamValidation, validate, deleteProjectHandler);
+
+/* ==========================================================================
+   Certifications Sub-resource CRUD Endpoints
+   ========================================================================== */
+
+/**
+ * @desc    Add a new certification record to user profile
+ * @route   POST /api/v1/profile/certifications
+ * @access  Private (JWT Protected)
+ */
+router.post('/certifications', addCertificationValidation, validate, addCertificationHandler);
+
+/**
+ * @desc    Get all certification records of logged-in user profile
+ * @route   GET /api/v1/profile/certifications
+ * @access  Private (JWT Protected)
+ */
+router.get('/certifications', getCertificationsHandler);
+
+/**
+ * @desc    Update an existing certification record in user profile by certification ID
+ * @route   PUT /api/v1/profile/certifications/:id
+ * @access  Private (JWT Protected)
+ */
+router.put('/certifications/:id', updateCertificationValidation, validate, updateCertificationHandler);
+
+/**
+ * @desc    Delete a certification record from user profile by certification ID
+ * @route   DELETE /api/v1/profile/certifications/:id
+ * @access  Private (JWT Protected)
+ */
+router.delete('/certifications/:id', certificationIdParamValidation, validate, deleteCertificationHandler);
 
 /* ==========================================================================
    Social Links Sub-resource Endpoints
