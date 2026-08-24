@@ -1,6 +1,9 @@
 import { api } from './api.js';
 import { API_ENDPOINTS } from '../constants/appConstants.js';
 
+let activeResumePromise = null;
+let activeResumeHistoryPromise = null;
+
 /**
  * Resume Management Service Module for InterviewIQ AI
  * Provides API interaction methods for PDF resume uploads, replacements, downloads, and history.
@@ -15,34 +18,90 @@ export const resumeService = {
   async uploadResume(fileOrFormData) {
     let payload = fileOrFormData;
 
-    // If a raw File object is passed, construct FormData with key 'resume'
-    if (fileOrFormData instanceof File) {
+    // If a raw File or Blob object is passed, construct FormData with key 'resume'
+    if (
+      typeof window !== 'undefined' &&
+      (fileOrFormData instanceof File || fileOrFormData instanceof Blob)
+    ) {
       payload = new FormData();
       payload.append('resume', fileOrFormData);
     }
 
-    const response = await api.post(API_ENDPOINTS.RESUME.BASE, payload);
+    const response = await api.post(API_ENDPOINTS.RESUME.BASE, payload, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      timeout: 60000,
+    });
     return response.data;
   },
 
   /**
-   * Fetch candidate's active PDF resume details
+   * Fetch candidate's active PDF resume details (with request deduplication and 404 handling)
    * GET /api/v1/profile/resume
    * @returns {Promise<Object>} ApiResponse containing active resume document
    */
   async getResume() {
-    const response = await api.get(API_ENDPOINTS.RESUME.BASE);
-    return response.data;
+    if (activeResumePromise) {
+      return activeResumePromise;
+    }
+
+    activeResumePromise = (async () => {
+      try {
+        const response = await api.get(API_ENDPOINTS.RESUME.BASE);
+        return response.data;
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          return {
+            success: true,
+            statusCode: 404,
+            data: null,
+            message: error.response.data?.message || 'No active resume found for this user.',
+          };
+        }
+        throw error;
+      }
+    })();
+
+    try {
+      return await activeResumePromise;
+    } finally {
+      activeResumePromise = null;
+    }
   },
 
   /**
-   * Fetch complete resume upload history for candidate
+   * Fetch complete resume upload history for candidate (with request deduplication and 404 handling)
    * GET /api/v1/profile/resume/history
    * @returns {Promise<Object>} ApiResponse containing array of uploaded resumes
    */
   async getResumeHistory() {
-    const response = await api.get(API_ENDPOINTS.RESUME.HISTORY);
-    return response.data;
+    if (activeResumeHistoryPromise) {
+      return activeResumeHistoryPromise;
+    }
+
+    activeResumeHistoryPromise = (async () => {
+      try {
+        const response = await api.get(API_ENDPOINTS.RESUME.HISTORY);
+        return response.data;
+      } catch (error) {
+        if (error.response && error.response.status === 404) {
+          return {
+            success: true,
+            statusCode: 404,
+            data: [],
+            message: error.response.data?.message || 'No resume upload history found.',
+          };
+        }
+        throw error;
+      }
+    })();
+
+    try {
+      return await activeResumeHistoryPromise;
+    } finally {
+      activeResumeHistoryPromise = null;
+    }
   },
 
   /**

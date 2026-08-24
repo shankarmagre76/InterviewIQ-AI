@@ -65,6 +65,7 @@ router.post('/:id/questions', interviewIdParamValidation, getQuestions);
  * @access  Private (JWT Protected)
  */
 router.post('/:id/answer', aiRateLimiter, interviewIdParamValidation, submitAnswerValidation, submitAnswer);
+router.post('/:id/questions/:questionId/answer', aiRateLimiter, interviewIdParamValidation, submitAnswerValidation, submitAnswer);
 
 /**
  * @desc    POST /api/v1/interviews/:id/complete & POST /api/v1/interviews/:id/finish

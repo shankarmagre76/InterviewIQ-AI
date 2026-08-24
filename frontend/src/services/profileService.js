@@ -1,5 +1,6 @@
 import { api } from './api.js';
 import { API_ENDPOINTS } from '../constants/appConstants.js';
+import { resumeService } from './resumeService.js';
 
 /**
  * Profile API Service Module for InterviewIQ AI
@@ -41,6 +42,7 @@ export const profileService = {
     }
     const response = await api.post(API_ENDPOINTS.PROFILE.IMAGE, payload, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
     });
     return response.data;
   },
@@ -330,8 +332,7 @@ export const profileService = {
    * @returns {Promise<Object>} ApiResponse with resume subdocument metadata
    */
   async getResume() {
-    const response = await api.get(API_ENDPOINTS.PROFILE.RESUME);
-    return response.data;
+    return resumeService.getResume();
   },
 
   /**
@@ -348,6 +349,7 @@ export const profileService = {
     }
     const response = await api.post(API_ENDPOINTS.PROFILE.RESUME, payload, {
       headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 60000,
     });
     return response.data;
   },
