@@ -15,12 +15,30 @@ export const uploadToCloudinary = (fileBuffer, folder = 'interviewiq/profiles') 
       process.env.CLOUDINARY_API_SECRET === 'sample_cloudinary_api_secret'
     ) {
       logger.warn('Cloudinary using demo credentials. Simulating image upload for development.');
-      const timestamp = Date.now();
-      const mockPublicId = `${folder}/image_mock_${timestamp}`;
+      const base64Str = fileBuffer ? fileBuffer.toString('base64') : '';
+      const mockPublicId = `${folder}/image_mock_${Date.now()}`;
       return resolve({
         public_id: mockPublicId,
-        secure_url: `https://res.cloudinary.com/demo/image/upload/v${timestamp}/${mockPublicId}.jpg`,
+        secure_url: `data:image/jpeg;base64,${base64Str}`,
       });
+    }
+
+    let isSettled = false;
+    let timer = null;
+
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || !process.env.NODE_ENV) {
+      timer = setTimeout(() => {
+        if (!isSettled) {
+          isSettled = true;
+          logger.warn('Cloudinary image upload timed out (3s) in dev mode. Falling back to base64 Data URI.');
+          const base64Str = fileBuffer ? fileBuffer.toString('base64') : '';
+          const mockPublicId = `${folder}/fallback_${Date.now()}`;
+          resolve({
+            public_id: mockPublicId,
+            secure_url: `data:image/jpeg;base64,${base64Str}`,
+          });
+        }
+      }, 3000);
     }
 
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -33,8 +51,21 @@ export const uploadToCloudinary = (fileBuffer, folder = 'interviewiq/profiles') 
         ],
       },
       (error, result) => {
+        if (timer) clearTimeout(timer);
+        if (isSettled) return;
+        isSettled = true;
+
         if (error) {
           logger.error(`Cloudinary upload failed: ${error.message}`);
+          if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || !process.env.NODE_ENV) {
+            logger.warn('Cloudinary upload failed in dev mode. Falling back to base64 Data URI.');
+            const base64Str = fileBuffer ? fileBuffer.toString('base64') : '';
+            const mockPublicId = `${folder}/fallback_${Date.now()}`;
+            return resolve({
+              public_id: mockPublicId,
+              secure_url: `data:image/jpeg;base64,${base64Str}`,
+            });
+          }
           return reject(error);
         }
         resolve(result);
@@ -49,7 +80,7 @@ export const uploadToCloudinary = (fileBuffer, folder = 'interviewiq/profiles') 
  * @param {string} imageUrl - Existing image URL
  */
 export const deleteFromCloudinary = async (imageUrl) => {
-  if (!imageUrl || !imageUrl.includes('cloudinary.com')) {
+  if (!imageUrl || imageUrl.startsWith('data:') || !imageUrl.includes('cloudinary.com')) {
     return;
   }
 
@@ -103,11 +134,33 @@ export const uploadRawToCloudinary = (
     ) {
       logger.warn('Cloudinary using demo credentials. Simulating PDF resume upload for development.');
       const mockPublicId = `${folder}/${uniqueId}`;
+      const base64Str = fileBuffer ? fileBuffer.toString('base64') : '';
+      const dataUrl = `data:application/pdf;base64,${base64Str}`;
       return resolve({
         public_id: mockPublicId,
-        secure_url: `https://res.cloudinary.com/demo/raw/upload/v${Date.now()}/${mockPublicId}.pdf`,
-        url: `https://res.cloudinary.com/demo/raw/upload/v${Date.now()}/${mockPublicId}.pdf`,
+        secure_url: dataUrl,
+        url: dataUrl,
       });
+    }
+
+    let isSettled = false;
+    let timer = null;
+
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || !process.env.NODE_ENV) {
+      timer = setTimeout(() => {
+        if (!isSettled) {
+          isSettled = true;
+          logger.warn('Cloudinary raw upload timed out (3s) in dev mode. Falling back to Data URI.');
+          const base64Str = fileBuffer ? fileBuffer.toString('base64') : '';
+          const mockPublicId = `${folder}/${uniqueId}`;
+          const dataUrl = `data:application/pdf;base64,${base64Str}`;
+          resolve({
+            public_id: mockPublicId,
+            secure_url: dataUrl,
+            url: dataUrl,
+          });
+        }
+      }, 3000);
     }
 
     const uploadStream = cloudinary.uploader.upload_stream(
@@ -118,8 +171,23 @@ export const uploadRawToCloudinary = (
         format: 'pdf',
       },
       (error, result) => {
+        if (timer) clearTimeout(timer);
+        if (isSettled) return;
+        isSettled = true;
+
         if (error) {
           logger.error(`Cloudinary raw upload failed: ${error.message}`);
+          if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || !process.env.NODE_ENV) {
+            logger.warn('Cloudinary raw document upload failed in dev mode. Falling back to Data URI.');
+            const base64Str = fileBuffer ? fileBuffer.toString('base64') : '';
+            const mockPublicId = `${folder}/${uniqueId}`;
+            const dataUrl = `data:application/pdf;base64,${base64Str}`;
+            return resolve({
+              public_id: mockPublicId,
+              secure_url: dataUrl,
+              url: dataUrl,
+            });
+          }
           return reject(error);
         }
         resolve(result);
@@ -129,6 +197,9 @@ export const uploadRawToCloudinary = (
     try {
       uploadStream.end(fileBuffer);
     } catch (streamError) {
+      if (timer) clearTimeout(timer);
+      if (isSettled) return;
+      isSettled = true;
       logger.error(`Failed to pipe file buffer into Cloudinary upload stream: ${streamError.message}`);
       reject(streamError);
     }
@@ -140,7 +211,7 @@ export const uploadRawToCloudinary = (
  * @param {string} publicIdOrUrl - Cloudinary publicId or full asset URL
  */
 export const deleteRawFromCloudinary = async (publicIdOrUrl) => {
-  if (!publicIdOrUrl) {
+  if (!publicIdOrUrl || publicIdOrUrl.startsWith('data:') || (!publicIdOrUrl.includes('cloudinary.com') && !publicIdOrUrl.includes('interviewiq/'))) {
     return;
   }
 

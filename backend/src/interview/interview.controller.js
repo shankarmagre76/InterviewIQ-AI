@@ -115,7 +115,8 @@ export const getQuestions = asyncHandler(async (req, res) => {
  */
 export const submitAnswer = asyncHandler(async (req, res) => {
   const userId = req.user?._id || req.user?.id;
-  const { id, questionId } = req.params;
+  const { id } = req.params;
+  const questionId = req.params.questionId || req.body.questionId || req.body.question;
   const userAnswer = req.body.answer || req.body.userAnswer || '';
 
   if (!id || !questionId) {

@@ -75,7 +75,7 @@ const resumeSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Resume URL is required'],
       trim: true,
-      match: [/^https?:\/\/.+/, 'Please provide a valid URL'],
+      match: [/^(https?:\/\/|data:).+/, 'Please provide a valid URL'],
     },
     fileSize: {
       type: Number,

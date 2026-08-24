@@ -51,9 +51,10 @@ class GeminiProvider {
    */
   async generateContentWithRetry(prompt, modelName = this.defaultModel, maxRetries = 3) {
     const ai = this.getClient();
+    const isRoadmapPrompt = prompt && (prompt.includes('roadmap') || prompt.includes('Learning Path') || prompt.includes('skillGaps'));
 
     if (!ai) {
-      return this.generateMockAnalysis();
+      return isRoadmapPrompt ? this.generateMockRoadmap() : this.generateMockAnalysis();
     }
 
     let attempt = 0;
@@ -92,9 +93,18 @@ class GeminiProvider {
           await this.sleep(backoffDelay);
         } else {
           logger.error(`Gemini API non-retryable failure on attempt ${attempt}: ${error.message}`);
+          if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+            logger.warn('Gemini API failed in dev mode. Falling back to simulated mock response payload.');
+            return isRoadmapPrompt ? this.generateMockRoadmap() : this.generateMockAnalysis();
+          }
           break; // Stop retrying for fatal non-transient errors
         }
       }
+    }
+
+    if (process.env.NODE_ENV === 'development' || !process.env.NODE_ENV) {
+      logger.warn('Gemini API exhausted retries in dev mode. Falling back to simulated mock response payload.');
+      return isRoadmapPrompt ? this.generateMockRoadmap() : this.generateMockAnalysis();
     }
 
     throw ApiError.internal(
@@ -186,6 +196,90 @@ class GeminiProvider {
     };
     return JSON.stringify(mock);
   }
+
+  /**
+   * Generate mock JSON learning roadmap payload for offline development or missing API keys.
+   * @returns {string} Stringified JSON mock roadmap response
+   */
+  generateMockRoadmap() {
+    logger.info('Generating simulated mock learning roadmap for development environment.');
+    const mock = {
+      title: 'Full-Stack Engineering & AI Systems Roadmap',
+      description: 'A structured 3-phase learning path focusing on backend architecture, cloud deployments, and AI integrations.',
+      skillGaps: ['Docker & Containerization', 'CI/CD Pipelines', 'System Design & Scalability'],
+      phases: [
+        {
+          title: 'Phase 1: Advanced Backend & Database Optimization',
+          description: 'Master database indexing, caching strategies with Redis, and RESTful API performance.',
+          skills: ['Node.js', 'MongoDB', 'Redis', 'Express.js'],
+          priority: 'HIGH',
+          estimatedDays: 7,
+          order: 1,
+          tasks: [
+            {
+              title: 'Implement Database Indexing and Aggregation Pipelines',
+              description: 'Learn how to optimize MongoDB query performance using compound indexes and aggregation stages.',
+              type: 'LEARNING',
+              skills: ['MongoDB', 'Performance Tuning'],
+              priority: 'HIGH',
+              estimatedMinutes: 45,
+              order: 1,
+              resources: [
+                {
+                  title: 'MongoDB Aggregation Framework Docs',
+                  url: 'https://www.mongodb.com/docs/manual/aggregation/',
+                  type: 'DOCUMENTATION',
+                },
+              ],
+            },
+            {
+              title: 'Build Redis Caching Layer for API Endpoints',
+              description: 'Set up Redis in-memory cache to decrease response latency for frequent query endpoints.',
+              type: 'PRACTICE',
+              skills: ['Redis', 'Node.js'],
+              priority: 'MEDIUM',
+              estimatedMinutes: 60,
+              order: 2,
+              resources: [
+                {
+                  title: 'Redis Node.js Crash Course',
+                  url: 'https://redis.io/docs/clients/nodejs/',
+                  type: 'DOCUMENTATION',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          title: 'Phase 2: DevOps, Docker & CI/CD Pipelines',
+          description: 'Containerize Node.js applications and automate testing and deployment via GitHub Actions.',
+          skills: ['Docker', 'GitHub Actions', 'CI/CD'],
+          priority: 'HIGH',
+          estimatedDays: 10,
+          order: 2,
+          tasks: [
+            {
+              title: 'Containerize Express & MongoDB with Docker Compose',
+              description: 'Write a multi-container Dockerfile and docker-compose.yml for local development and production build.',
+              type: 'PROJECT',
+              skills: ['Docker', 'Docker Compose'],
+              priority: 'HIGH',
+              estimatedMinutes: 90,
+              order: 1,
+              resources: [
+                {
+                  title: 'Dockerizing Node.js Web App',
+                  url: 'https://docs.docker.com/language/nodejs/',
+                  type: 'DOCUMENTATION',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    return JSON.stringify(mock);
+  }
 }
 
 /**
@@ -201,6 +295,15 @@ class AiService {
       // OpenAI: new OpenAiProvider(),
       // Claude: new ClaudeProvider(),
     };
+  }
+
+  /**
+   * Helper method delegating to GeminiProvider for prompt generation with retry backoff.
+   * Enables direct prompt calls from other AI service consumers (e.g., LearningRoadmapAiService).
+   */
+  async generateContentWithRetry(prompt, modelName, maxRetries) {
+    const provider = this.providers.Gemini;
+    return provider.generateContentWithRetry(prompt, modelName, maxRetries);
   }
 
   /**
@@ -249,5 +352,8 @@ class AiService {
   }
 }
 
-export default new AiService();
-export { AiService, GeminiProvider };
+const defaultAiService = new AiService();
+const geminiProviderInstance = defaultAiService.providers.Gemini;
+
+export default defaultAiService;
+export { AiService, GeminiProvider, geminiProviderInstance as geminiProvider };
