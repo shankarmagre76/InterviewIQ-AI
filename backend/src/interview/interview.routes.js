@@ -15,12 +15,14 @@ import {
   submitAnswerValidation,
 } from './interview.validation.js';
 import authenticate from '../middleware/auth.middleware.js';
+import authorizeRoles from '../middleware/role.middleware.js';
 import { aiRateLimiter } from '../middleware/rateLimit.middleware.js';
 
 const router = Router();
 
-// Enforce JWT Authentication for all interview endpoints
+// Enforce JWT Authentication and Candidate/Student role for candidate mock interview endpoints
 router.use(authenticate);
+router.use(authorizeRoles('Student', 'Admin'));
 
 /**
  * @desc    POST /api/v1/interviews & POST /api/v1/interviews/start (Rate limited: 10 AI operations/hour)

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import authenticate from '../middleware/auth.middleware.js';
+import authorizeRoles from '../middleware/role.middleware.js';
 import { aiRateLimiter } from '../middleware/rateLimit.middleware.js';
 import {
   generateRoadmap,

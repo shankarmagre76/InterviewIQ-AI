@@ -3,6 +3,7 @@ import authenticate from '../middleware/auth.middleware.js';
 import authorizeRoles from '../middleware/role.middleware.js';
 import {
   createCompany,
+  getMyCompany,
   getCompany,
   updateCompany,
   deleteCompany,
@@ -21,6 +22,12 @@ const router = Router();
  * Public Routes
  */
 router.get('/', listCompanies);
+
+/**
+ * Protected Recruiter Company Profile Route (must be before /:id)
+ */
+router.get('/my-company', authenticate, authorizeRoles('Recruiter', 'Admin'), getMyCompany);
+
 router.get('/:id', companyIdParamValidation, validate, getCompany);
 
 /**

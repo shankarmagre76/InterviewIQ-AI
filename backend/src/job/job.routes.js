@@ -3,6 +3,7 @@ import authenticate from '../middleware/auth.middleware.js';
 import authorizeRoles from '../middleware/role.middleware.js';
 import {
   createJob,
+  getMyJobs,
   getJobDetails,
   updateJob,
   deleteJob,
@@ -22,6 +23,12 @@ const router = Router();
  * Public Routes
  */
 router.get('/', searchJobs);
+
+/**
+ * Protected Recruiter Job Listings Route (must be before /:id)
+ */
+router.get('/my-jobs', authenticate, authorizeRoles('Recruiter', 'Admin'), getMyJobs);
+
 router.get('/:id', jobIdParamValidation, validate, getJobDetails);
 
 /**

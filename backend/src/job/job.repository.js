@@ -84,8 +84,8 @@ class JobRepository {
 
     const matchStage = { ...filter };
 
-    // Default status to Active if not specified
-    if (!matchStage.status) {
+    // Default status to Active if not specified and not explicitly fetching all statuses for management
+    if (!matchStage.status && !options.includeAllStatuses && !filter.createdBy && !filter.company) {
       matchStage.status = 'Active';
     }
 

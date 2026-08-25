@@ -36,6 +36,27 @@ class CompanyRepository {
   }
 
   /**
+   * Alias method for getCompanyById for consistency.
+   */
+  async getCompany(id, populateFields = 'createdBy') {
+    return await this.getCompanyById(id, populateFields);
+  }
+
+  /**
+   * Find a company document owned/created by a recruiter user ID.
+   * @param {string|import('mongoose').Types.ObjectId} createdBy - User ObjectId
+   * @param {string} [populateFields='createdBy'] - Fields to populate
+   * @returns {Promise<import('./company.model.js').default|null>} Company document or null
+   */
+  async getCompanyByOwner(createdBy, populateFields = 'createdBy') {
+    const query = Company.findOne({ createdBy });
+    if (populateFields) {
+      query.populate(populateFields, 'firstName lastName email role');
+    }
+    return await query.exec();
+  }
+
+  /**
    * Find a company document by companyName safely escaping regex special characters.
    * @param {string} companyName - Exact company name
    * @returns {Promise<import('./company.model.js').default|null>} Company document or null
@@ -105,6 +126,17 @@ class CompanyRepository {
     ]);
 
     return [companies, total];
+  }
+
+  /**
+   * Alias / helper method for listCompanies returning pagination metadata object.
+   */
+  async listCompanies(filter = {}, options = {}) {
+    const page = Math.max(1, parseInt(options.page, 10) || 1);
+    const limit = Math.max(1, parseInt(options.limit, 10) || 10);
+    const [companies, total] = await this.getCompanies(filter, options);
+    const totalPages = Math.ceil(total / limit) || 1;
+    return { companies, total, page, totalPages };
   }
 }
 

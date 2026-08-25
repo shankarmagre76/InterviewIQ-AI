@@ -10,7 +10,12 @@ import ApiError from '../utils/ApiError.js';
  */
 const authorizeRoles = (...allowedRoles) => {
   // Flatten array arguments if passed as authorizeRoles('Admin', 'Recruiter') or authorizeRoles(['Admin', 'Recruiter'])
-  const roles = allowedRoles.flat().map((r) => String(r).toLowerCase());
+  const rawRoles = allowedRoles.flat().map((r) => String(r).toLowerCase());
+  const roles = new Set(rawRoles);
+  if (roles.has('student') || roles.has('candidate')) {
+    roles.add('student');
+    roles.add('candidate');
+  }
 
   return (req, res, next) => {
     if (!req.user) {
@@ -19,7 +24,7 @@ const authorizeRoles = (...allowedRoles) => {
 
     const userRole = req.user.role ? String(req.user.role).toLowerCase() : '';
 
-    if (!userRole || !roles.includes(userRole)) {
+    if (!userRole || !roles.has(userRole)) {
       return next(
         ApiError.forbidden(
           `Access denied. Role '${req.user.role || 'Unknown'}' is not authorized to access this resource.`

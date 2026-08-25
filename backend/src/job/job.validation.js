@@ -28,9 +28,8 @@ export const validate = (req, res, next) => {
  */
 export const createJobValidation = [
   body('company')
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('Company ID is required')
     .isMongoId()
     .withMessage('Company ID must be a valid MongoDB ObjectId'),
 

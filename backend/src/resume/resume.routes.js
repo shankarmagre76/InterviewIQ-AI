@@ -12,13 +12,15 @@ import {
   resumeIdParamValidation,
 } from './resume.validation.js';
 import authenticate from '../middleware/auth.middleware.js';
+import authorizeRoles from '../middleware/role.middleware.js';
 import { handleResumeUpload } from '../middleware/upload.middleware.js';
 import resumeAnalysisRoutes from './resumeAnalysis.routes.js';
 
 const router = Router();
 
-// Enforce JWT Authentication for all resume endpoints
+// Enforce JWT Authentication and Candidate role for candidate resume endpoints
 router.use(authenticate);
+router.use(authorizeRoles('Student', 'Admin'));
 
 // Mount AI Resume Analysis sub-router endpoints (/analyze, /analysis, /analysis/history, /analysis/:id)
 router.use('/', resumeAnalysisRoutes);

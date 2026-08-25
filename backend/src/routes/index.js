@@ -12,6 +12,7 @@ import dashboardRoutes from '../dashboard/dashboard.routes.js';
 import learningRoadmapRoutes from '../learningRoadmap/learningRoadmap.routes.js';
 import notificationRoutes from '../notification/notification.routes.js';
 import adminRoutes from '../admin/admin.routes.js';
+import recruiterAiRoutes from '../recruiter/recruiterAi.routes.js';
 import { getRoot, getApiIndex } from '../controllers/health.controller.js';
 
 const router = Router();
@@ -82,6 +83,11 @@ router.use('/api/roadmaps', learningRoadmapRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/api/v1/notifications', notificationRoutes);
 router.use('/api/notifications', notificationRoutes);
+
+// Mount Recruiter AI sub-routes
+router.use('/recruiter/ai', recruiterAiRoutes);
+router.use('/api/v1/recruiter/ai', recruiterAiRoutes);
+router.use('/api/recruiter/ai', recruiterAiRoutes);
 
 // Mount Admin sub-routes
 router.use('/admin', adminRoutes);

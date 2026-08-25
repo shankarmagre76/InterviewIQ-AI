@@ -16,7 +16,12 @@ const rateLimitHandler = (message) => (req, res, next, options) => {
  */
 export const globalRateLimiter = rateLimit({
   windowMs: Number(process.env.RATE_LIMIT_GLOBAL_WINDOW_MS) || 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'test' ? 1000 : Number(process.env.RATE_LIMIT_GLOBAL_MAX) || 100,
+  max:
+    process.env.NODE_ENV === 'test'
+      ? 1000
+      : process.env.NODE_ENV === 'production'
+      ? Number(process.env.RATE_LIMIT_GLOBAL_MAX) || 100
+      : Number(process.env.RATE_LIMIT_GLOBAL_MAX) || 1000,
   standardHeaders: true, // Return RateLimit-* headers
   legacyHeaders: false,
   skip: (req) => {

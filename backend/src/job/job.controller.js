@@ -56,8 +56,18 @@ export const searchJobs = asyncHandler(async (req, res) => {
   }).send(res);
 });
 
+export const getMyJobs = asyncHandler(async (req, res) => {
+  const result = await jobService.getMyJobs(req.user, req.query);
+  return new ApiResponse(200, result.jobs, 'Recruiter job postings retrieved successfully', {
+    total: result.total,
+    page: result.page,
+    totalPages: result.totalPages,
+  }).send(res);
+});
+
 export default {
   createJob,
+  getMyJobs,
   getJobDetails,
   updateJob,
   deleteJob,

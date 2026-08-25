@@ -6,6 +6,7 @@ import Interview from '../interview/interview.model.js';
 import InterviewResult from '../interview/interviewResult.model.js';
 import Application from '../application/application.model.js';
 import SavedJob from '../savedJob/savedJob.model.js';
+import Job from '../job/job.model.js';
 
 /**
  * Dashboard Repository Layer
@@ -965,6 +966,89 @@ class DashboardRepository {
       companyStats,
       locationStats,
       recentApplications,
+    };
+  }
+
+  /**
+   * Retrieve recruiter aggregated stats for recruiter dashboard
+   * @param {string|mongoose.Types.ObjectId} recruiterId
+   * @returns {Promise<Object>}
+   */
+  async getRecruiterStats(recruiterId) {
+    const recruiterObjectId = this.toObjectId(recruiterId);
+
+    // Fetch jobs created by recruiter
+    const jobs = await Job.find({ createdBy: recruiterObjectId }).sort({ createdAt: -1 }).lean();
+    const jobIds = jobs.map((j) => j._id);
+
+    const activeJobsCount = jobs.filter((j) => j.status === 'Active').length;
+    const closedJobsCount = jobs.filter((j) => j.status === 'Closed' || j.status === 'Draft').length;
+
+    // Fetch applications for recruiter's jobs
+    const applications = await Application.find({ job: { $in: jobIds } })
+      .populate('user', 'firstName lastName email phone profileImage')
+      .populate('job', 'title location workMode status')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const totalApplicants = applications.length;
+    let shortlistedCount = 0;
+    let interviewCount = 0;
+    let hiredCount = 0;
+    let rejectedCount = 0;
+    let appliedCount = 0;
+    let underReviewCount = 0;
+
+    const pipelineBreakdown = {
+      Applied: 0,
+      'Under Review': 0,
+      Shortlisted: 0,
+      'Interview Scheduled': 0,
+      'Technical Round': 0,
+      'HR Round': 0,
+      Offered: 0,
+      Rejected: 0,
+      Withdrawn: 0,
+    };
+
+    applications.forEach((app) => {
+      const st = app.status || 'Applied';
+      if (pipelineBreakdown[st] !== undefined) {
+        pipelineBreakdown[st]++;
+      }
+      if (st === 'Shortlisted') shortlistedCount++;
+      else if (['Interview Scheduled', 'Technical Round', 'HR Round'].includes(st)) interviewCount++;
+      else if (['Offered', 'Hired'].includes(st)) hiredCount++;
+      else if (st === 'Rejected') rejectedCount++;
+      else if (st === 'Applied') appliedCount++;
+      else if (st === 'Under Review') underReviewCount++;
+    });
+
+    const recentApplicants = applications.slice(0, 10).map((app) => ({
+      id: app._id,
+      candidateName: app.user ? `${app.user.firstName || ''} ${app.user.lastName || ''}`.trim() : 'Applicant',
+      candidateEmail: app.user?.email || '',
+      candidateImage: app.user?.profileImage || '',
+      jobTitle: app.job?.title || 'Unknown Job',
+      jobId: app.job?._id,
+      status: app.status,
+      appliedAt: app.createdAt || app.appliedAt,
+    }));
+
+    return {
+      activeJobsCount,
+      closedJobsCount,
+      totalJobsCount: jobs.length,
+      activeJobPostings: jobs.slice(0, 5),
+      totalApplicants,
+      shortlistedCount,
+      interviewCount,
+      hiredCount,
+      rejectedCount,
+      appliedCount,
+      underReviewCount,
+      pipelineBreakdown,
+      recentApplicants,
     };
   }
 }

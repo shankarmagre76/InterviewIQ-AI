@@ -13,6 +13,11 @@ class AuthService {
   async register(userData) {
     const { firstName, lastName, email, password, role, phone } = userData;
 
+    // Disallow self-assignment of Admin role
+    if (role && String(role).toLowerCase() === 'admin') {
+      throw ApiError.forbidden('Admin role cannot be self-assigned');
+    }
+
     // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {

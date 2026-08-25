@@ -66,8 +66,17 @@ export const listCompanies = asyncHandler(async (req, res) => {
   }).send(res);
 });
 
+export const getMyCompany = asyncHandler(async (req, res) => {
+  const company = await companyService.getCompanyByOwner(req.user._id);
+  if (!company) {
+    return new ApiResponse(200, null, 'No company profile found for current recruiter').send(res);
+  }
+  return new ApiResponse(200, company, 'Recruiter company profile retrieved successfully').send(res);
+});
+
 export default {
   createCompany,
+  getMyCompany,
   getCompany,
   updateCompany,
   deleteCompany,

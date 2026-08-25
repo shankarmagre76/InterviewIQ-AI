@@ -109,3 +109,18 @@ export const getActivityStream = asyncHandler(async (req, res) => {
 export const getDashboard = getMainDashboard;
 export const getActivityDashboard = getActivityStream;
 export const getApplicationAnalytics = getApplicationDashboard;
+
+/**
+ * @desc    GET /api/v1/dashboard/recruiter
+ *          Get aggregated recruiter dashboard metrics overview
+ * @access  Private (Recruiter / Admin Only)
+ */
+export const getRecruiterDashboard = asyncHandler(async (req, res) => {
+  const userId = req.user?._id || req.user?.id;
+  if (!userId) {
+    throw ApiError.unauthorized('User authentication required');
+  }
+
+  const data = await dashboardService.getRecruiterDashboard(userId);
+  return new ApiResponse(200, data, 'Recruiter dashboard metrics retrieved successfully').send(res);
+});

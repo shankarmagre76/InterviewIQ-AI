@@ -19,27 +19,35 @@ class JobService {
       throw ApiError.forbidden('Only Recruiters or Admins can post job listings');
     }
 
-    // 2. Associated Company Verification
-    const company = await companyRepository.getCompany(jobData.company, '');
-    if (!company) {
-      throw ApiError.notFound('Associated company profile not found');
+    let company = null;
+
+    // 2. Derive company directly from authenticated recruiter
+    if (currentUser.role === 'Recruiter') {
+      company = await companyRepository.getCompanyByOwner(currentUser._id);
+      if (!company) {
+        throw ApiError.badRequest('Please create a company profile before posting a job');
+      }
+    } else if (currentUser.role === 'Admin') {
+      // If Admin provides jobData.company, look it up; otherwise look up Admin's owned company
+      const targetCompanyId = jobData.company;
+      if (targetCompanyId) {
+        company = await companyRepository.getCompany(targetCompanyId, '');
+      } else {
+        company = await companyRepository.getCompanyByOwner(currentUser._id);
+      }
+      if (!company) {
+        throw ApiError.badRequest('Please create or specify a valid company profile before posting a job');
+      }
     }
 
-    // 3. Company Ownership Check
-    const isCompanyOwner = company.createdBy.toString() === currentUser._id.toString();
-    const isAdmin = currentUser.role === 'Admin';
-    if (!isCompanyOwner && !isAdmin) {
-      throw ApiError.forbidden('You can only post jobs for companies you own/manage');
-    }
-
-    // 4. Company Hiring Availability Check
+    // 3. Company Hiring Availability Check
     if (company.hiringStatus === 'Closed' || company.hiringStatus === 'Not Hiring') {
       throw ApiError.badRequest(
         `Cannot post new jobs because company hiring status is currently '${company.hiringStatus}'`
       );
     }
 
-    // 5. Deadline Validation Rule: Application deadline must be in the future
+    // 4. Deadline Validation Rule: Application deadline must be in the future
     if (jobData.applicationDeadline) {
       const deadline = new Date(jobData.applicationDeadline);
       const now = new Date();
@@ -50,6 +58,7 @@ class JobService {
 
     const payload = {
       ...jobData,
+      company: company._id,
       createdBy: currentUser._id,
     };
 
@@ -70,6 +79,40 @@ class JobService {
   }
 
   /**
+   * Get jobs belonging to the authenticated recruiter's company.
+   * @param {object} currentUser - Authenticated user object
+   * @param {object} queryParams - Search/filter query options
+   * @returns {Promise<object>} Paginated jobs
+   */
+  async getMyJobs(currentUser, queryParams = {}) {
+    if (!currentUser) throw ApiError.unauthorized('Authentication required');
+
+    let filter = {};
+    if (currentUser.role === 'Recruiter') {
+      const company = await companyRepository.getCompanyByOwner(currentUser._id);
+      if (!company) {
+        return {
+          jobs: [],
+          total: 0,
+          page: 1,
+          limit: 10,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPrevPage: false,
+        };
+      }
+      filter.company = company._id;
+    } else {
+      filter.createdBy = currentUser._id;
+    }
+
+    return await jobRepository.searchJobs(filter, {
+      ...queryParams,
+      includeAllStatuses: true,
+    });
+  }
+
+  /**
    * Update an existing job posting with ownership checks.
    * @param {string} jobId - Job ObjectId
    * @param {object} updateData - Fields to update
@@ -82,8 +125,15 @@ class JobService {
       throw ApiError.notFound('Job posting not found');
     }
 
-    // Ownership check: Job creator or Admin
-    const isJobOwner = existingJob.createdBy.toString() === currentUser._id.toString();
+    // Ownership check: Job creator or Recruiter owning the job's company or Admin
+    let isJobOwner = existingJob.createdBy.toString() === currentUser._id.toString();
+    if (!isJobOwner && currentUser.role === 'Recruiter') {
+      const company = await companyRepository.getCompanyByOwner(currentUser._id);
+      if (company && existingJob.company && existingJob.company.toString() === company._id.toString()) {
+        isJobOwner = true;
+      }
+    }
+
     const isAdmin = currentUser.role === 'Admin';
     if (!isJobOwner && !isAdmin) {
       throw ApiError.forbidden('You are not authorized to update this job posting');
@@ -97,6 +147,9 @@ class JobService {
         throw ApiError.badRequest('Application deadline must be a future date');
       }
     }
+
+    // Security: Do not allow changing company ownership via job update
+    delete updateData.company;
 
     return await jobRepository.updateJob(jobId, updateData);
   }
@@ -113,7 +166,14 @@ class JobService {
       throw ApiError.notFound('Job posting not found');
     }
 
-    const isJobOwner = existingJob.createdBy.toString() === currentUser._id.toString();
+    let isJobOwner = existingJob.createdBy.toString() === currentUser._id.toString();
+    if (!isJobOwner && currentUser.role === 'Recruiter') {
+      const company = await companyRepository.getCompanyByOwner(currentUser._id);
+      if (company && existingJob.company && existingJob.company.toString() === company._id.toString()) {
+        isJobOwner = true;
+      }
+    }
+
     const isAdmin = currentUser.role === 'Admin';
     if (!isJobOwner && !isAdmin) {
       throw ApiError.forbidden('You are not authorized to delete this job posting');

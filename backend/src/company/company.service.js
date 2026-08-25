@@ -18,19 +18,36 @@ class CompanyService {
       throw ApiError.forbidden('Only Recruiters or Admins can create company profiles');
     }
 
-    // 2. Business Duplicate Check: Ensure company name is unique
+    // 2. Business Rule Enforcement (1 Recruiter -> 1 Company): Check if recruiter already owns a company
+    if (currentUser.role === 'Recruiter') {
+      const ownedCompany = await companyRepository.getCompanyByOwner(currentUser._id);
+      if (ownedCompany) {
+        throw ApiError.conflict('Recruiter already has a company profile');
+      }
+    }
+
+    // 3. Business Duplicate Check: Ensure company name is unique
     const existingCompany = await companyRepository.getCompanyByName(companyData.companyName);
     if (existingCompany) {
       throw ApiError.badRequest(`Company with name '${companyData.companyName}' already exists`);
     }
 
-    // 3. Attach current user as owner/creator
+    // 4. Attach current user as owner/creator
     const payload = {
       ...companyData,
       createdBy: currentUser._id,
     };
 
     return await companyRepository.createCompany(payload);
+  }
+
+  /**
+   * Get company profile owned by a specific user/recruiter.
+   * @param {string} userId - Recruiter User ObjectId
+   * @returns {Promise<object|null>} Company document or null
+   */
+  async getCompanyByOwner(userId) {
+    return await companyRepository.getCompanyByOwner(userId);
   }
 
   /**

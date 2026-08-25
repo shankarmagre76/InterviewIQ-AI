@@ -661,6 +661,15 @@ class DashboardService {
   async getCareerReadinessDashboard(userId) {
     return await careerScoreService.calculateCareerReadiness(userId);
   }
+
+  /**
+   * Get Recruiter Dashboard summary overview metrics
+   * @param {string} recruiterId
+   * @returns {Promise<Object>} Recruiter dashboard payload
+   */
+  async getRecruiterDashboard(recruiterId) {
+    return await dashboardRepository.getRecruiterStats(recruiterId);
+  }
 }
 
 export default new DashboardService();
