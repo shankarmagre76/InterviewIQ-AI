@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Job from './job.model.js';
 import { createSafeRegex } from '../utils/regex.util.js';
 
@@ -83,6 +84,17 @@ class JobRepository {
     const skip = (page - 1) * limit;
 
     const matchStage = { ...filter };
+
+    // Safely cast string ObjectIds for MongoDB Aggregation $match stage
+    if (matchStage.company && typeof matchStage.company === 'string' && mongoose.Types.ObjectId.isValid(matchStage.company)) {
+      matchStage.company = new mongoose.Types.ObjectId(matchStage.company);
+    }
+    if (matchStage.createdBy && typeof matchStage.createdBy === 'string' && mongoose.Types.ObjectId.isValid(matchStage.createdBy)) {
+      matchStage.createdBy = new mongoose.Types.ObjectId(matchStage.createdBy);
+    }
+    if (matchStage._id && typeof matchStage._id === 'string' && mongoose.Types.ObjectId.isValid(matchStage._id)) {
+      matchStage._id = new mongoose.Types.ObjectId(matchStage._id);
+    }
 
     // Default status to Active if not specified and not explicitly fetching all statuses for management
     if (!matchStage.status && !options.includeAllStatuses && !filter.createdBy && !filter.company) {

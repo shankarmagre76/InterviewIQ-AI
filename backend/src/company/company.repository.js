@@ -49,7 +49,11 @@ class CompanyRepository {
    * @returns {Promise<import('./company.model.js').default|null>} Company document or null
    */
   async getCompanyByOwner(createdBy, populateFields = 'createdBy') {
-    const query = Company.findOne({ createdBy });
+    if (!createdBy) return null;
+    const targetId = createdBy._id || createdBy;
+    const query = Company.findOne({
+      $or: [{ createdBy: targetId }, { _id: targetId }],
+    });
     if (populateFields) {
       query.populate(populateFields, 'firstName lastName email role');
     }
