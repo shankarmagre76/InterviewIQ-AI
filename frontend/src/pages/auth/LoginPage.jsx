@@ -61,7 +61,8 @@ export const LoginPage = () => {
       // Destination preservation logic:
       // If user came from a protected route, return them there.
       // Otherwise, redirect Admin users to /admin and Candidates to /dashboard.
-      const redirectPath = from || (userRole === 'admin' ? '/admin' : '/dashboard');
+      const defaultPath = userRole === 'admin' ? '/admin' : userRole === 'recruiter' ? '/recruiter/dashboard' : '/dashboard';
+      const redirectPath = from || defaultPath;
       navigate(redirectPath, { replace: true });
     } catch (err) {
       setApiError(parseApiError(err));

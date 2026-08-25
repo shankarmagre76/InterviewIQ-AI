@@ -105,7 +105,8 @@ export const RegisterPage = () => {
         role,
       });
 
-      navigate('/dashboard', { replace: true });
+      const targetPath = role === 'Recruiter' ? '/recruiter/dashboard' : '/dashboard';
+      navigate(targetPath, { replace: true });
     } catch (err) {
       setApiError(parseApiError(err));
     } finally {

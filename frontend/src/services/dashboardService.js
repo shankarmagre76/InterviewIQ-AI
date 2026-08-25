@@ -96,6 +96,15 @@ export const dashboardService = {
   async getActivityStream(params = {}) {
     return this.getActivity(params);
   },
+
+  /**
+   * Recruiter dashboard overview metrics
+   * GET /api/v1/dashboard/recruiter
+   */
+  async getRecruiterDashboard(params = {}) {
+    const response = await api.get('/dashboard/recruiter', { params });
+    return response.data;
+  },
 };
 
 export default dashboardService;

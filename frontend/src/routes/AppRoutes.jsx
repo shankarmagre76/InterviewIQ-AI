@@ -8,12 +8,13 @@ import { AdminLayout } from '../layouts/AdminLayout';
 
 // Guards
 import { ProtectedRoute } from './ProtectedRoute';
+import { CandidateRoute } from './CandidateRoute';
+import { RecruiterRoute } from './RecruiterRoute';
 import { AdminRoute } from './AdminRoute';
 import { PublicRoute } from './PublicRoute';
 
 // UI Fallback
 import { PageLoader } from '../components/ui/LoadingState';
-
 
 // Public Pages (Lazy Loaded)
 const LandingPage = lazy(() => import('../pages/LandingPage'));
@@ -45,6 +46,18 @@ const InterviewResultPage = lazy(() => import('../pages/interviews/InterviewResu
 const RoadmapPage = lazy(() => import('../pages/roadmap/RoadmapPage'));
 const RoadmapDetailsPage = lazy(() => import('../pages/roadmap/RoadmapDetailsPage'));
 const RoadmapHistoryPage = lazy(() => import('../pages/roadmap/RoadmapHistoryPage'));
+
+// Protected Recruiter Pages (Lazy Loaded)
+const RecruiterDashboardPage = lazy(() => import('../pages/recruiter/RecruiterDashboardPage'));
+const RecruiterCompanyPage = lazy(() => import('../pages/recruiter/RecruiterCompanyPage'));
+const RecruiterJobsPage = lazy(() => import('../pages/recruiter/RecruiterJobsPage'));
+const RecruiterApplicantsPage = lazy(() => import('../pages/recruiter/RecruiterApplicantsPage'));
+const RecruiterPipelinePage = lazy(() => import('../pages/recruiter/RecruiterPipelinePage'));
+const RecruiterInterviewsPage = lazy(() => import('../pages/recruiter/RecruiterInterviewsPage'));
+const RecruiterAiPage = lazy(() => import('../pages/recruiter/RecruiterAiPage'));
+const RecruiterAnalyticsPage = lazy(() => import('../pages/recruiter/RecruiterAnalyticsPage'));
+
+// Shared Protected Pages (Lazy Loaded)
 const NotificationsPage = lazy(() => import('../pages/notifications/NotificationsPage'));
 const SettingsPage = lazy(() => import('../pages/settings/SettingsPage'));
 const DesignSystemPage = lazy(() => import('../pages/DesignSystemPage'));
@@ -64,7 +77,6 @@ const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
 export const AppRoutes = () => {
   return (
     <Suspense fallback={<PageLoader />}>
-
       <Routes>
         {/* Public Landing Page */}
         <Route path="/" element={<LandingPage />} />
@@ -84,8 +96,8 @@ export const AppRoutes = () => {
           </Route>
         </Route>
 
-        {/* Protected User Candidate Routes */}
-        <Route element={<ProtectedRoute />}>
+        {/* Protected Candidate Routes */}
+        <Route element={<CandidateRoute />}>
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/onboarding" element={<OnboardingPage />} />
@@ -109,6 +121,26 @@ export const AppRoutes = () => {
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/roadmap/history" element={<RoadmapHistoryPage />} />
             <Route path="/roadmap/:id" element={<RoadmapDetailsPage />} />
+          </Route>
+        </Route>
+
+        {/* Protected Recruiter Routes */}
+        <Route element={<RecruiterRoute />}>
+          <Route element={<MainLayout />}>
+            <Route path="/recruiter/dashboard" element={<RecruiterDashboardPage />} />
+            <Route path="/recruiter/company" element={<RecruiterCompanyPage />} />
+            <Route path="/recruiter/jobs" element={<RecruiterJobsPage />} />
+            <Route path="/recruiter/applicants" element={<RecruiterApplicantsPage />} />
+            <Route path="/recruiter/pipeline" element={<RecruiterPipelinePage />} />
+            <Route path="/recruiter/interviews" element={<RecruiterInterviewsPage />} />
+            <Route path="/recruiter/ai" element={<RecruiterAiPage />} />
+            <Route path="/recruiter/analytics" element={<RecruiterAnalyticsPage />} />
+          </Route>
+        </Route>
+
+        {/* Shared Protected User Routes (Notifications, Settings) */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<MainLayout />}>
             <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/design-system" element={<DesignSystemPage />} />
@@ -136,4 +168,3 @@ export const AppRoutes = () => {
 };
 
 export default AppRoutes;
-

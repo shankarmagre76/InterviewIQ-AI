@@ -14,8 +14,17 @@ import {
   BarChart3,
   ShieldAlert,
   Palette,
+  Bookmark,
+  Sparkles,
+  Settings,
+  GitPullRequest,
+  Calendar,
 } from 'lucide-react';
-import { MAIN_NAV_ITEMS, ADMIN_NAV_ITEMS } from '../../constants/navigation';
+import {
+  CANDIDATE_NAV_ITEMS,
+  RECRUITER_NAV_ITEMS,
+  ADMIN_NAV_ITEMS,
+} from '../../constants/navigation';
 import { useAuth } from '../../hooks/useAuth';
 
 const iconMap = {
@@ -32,20 +41,36 @@ const iconMap = {
   BarChart3,
   ShieldAlert,
   Palette,
+  Bookmark,
+  Sparkles,
+  Settings,
+  GitPullRequest,
+  Calendar,
 };
 
 export const Sidebar = ({ isAdminMode = false }) => {
   const { user } = useAuth();
-  const isAdminUser = user?.role?.toLowerCase() === 'admin';
+  const userRole = user?.role?.toLowerCase();
+  const isAdminUser = userRole === 'admin';
+  const isRecruiterUser = userRole === 'recruiter';
 
-  const navItems = isAdminMode ? ADMIN_NAV_ITEMS : MAIN_NAV_ITEMS;
+  let navItems = CANDIDATE_NAV_ITEMS;
+  let portalTitle = 'Candidate Portal';
+
+  if (isAdminMode) {
+    navItems = ADMIN_NAV_ITEMS;
+    portalTitle = 'Admin Management';
+  } else if (isRecruiterUser) {
+    navItems = RECRUITER_NAV_ITEMS;
+    portalTitle = 'Recruiter Portal';
+  }
 
   return (
     <aside className="hidden lg:flex w-64 bg-slate-950 border-r border-slate-800/80 flex-col justify-between shrink-0 p-4 min-h-[calc(100vh-4rem)]">
       <div className="space-y-6">
         <div>
           <h3 className="px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-2">
-            {isAdminMode ? 'Admin Management' : 'Candidate Portal'}
+            {portalTitle}
           </h3>
           <nav className="space-y-1" aria-label="Sidebar main navigation">
             {navItems.map((item) => {

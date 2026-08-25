@@ -17,6 +17,15 @@ export const jobService = {
   },
 
   /**
+   * Get jobs posted by the authenticated recruiter / company owner.
+   * @param {Object} [params={}] - Pagination and filter parameters
+   */
+  async getMyJobs(params = {}) {
+    const response = await api.get('/jobs/my-jobs', { params });
+    return response.data;
+  },
+
+  /**
    * Alias for searchJobs to support listing calls.
    * @param {Object} [params={}] - Pagination and filter parameters
    */

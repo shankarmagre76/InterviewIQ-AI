@@ -16,7 +16,11 @@ import {
   X,
   LogOut,
 } from 'lucide-react';
-import { MAIN_NAV_ITEMS, ADMIN_NAV_ITEMS } from '../../constants/navigation';
+import {
+  CANDIDATE_NAV_ITEMS,
+  RECRUITER_NAV_ITEMS,
+  ADMIN_NAV_ITEMS,
+} from '../../constants/navigation';
 import { useAuth } from '../../hooks/useAuth';
 import { Badge } from '../ui/Badge';
 
@@ -37,8 +41,16 @@ const iconMap = {
 
 export const MobileNavigation = ({ isOpen, onClose, isAdminMode = false }) => {
   const { user, logout } = useAuth();
-  const isAdminUser = user?.role?.toLowerCase() === 'admin';
-  const navItems = isAdminMode ? ADMIN_NAV_ITEMS : MAIN_NAV_ITEMS;
+  const userRole = user?.role?.toLowerCase();
+  const isAdminUser = userRole === 'admin';
+  const isRecruiterUser = userRole === 'recruiter';
+
+  let navItems = CANDIDATE_NAV_ITEMS;
+  if (isAdminMode) {
+    navItems = ADMIN_NAV_ITEMS;
+  } else if (isRecruiterUser) {
+    navItems = RECRUITER_NAV_ITEMS;
+  }
 
   useEffect(() => {
     const handleKeyDown = (e) => {

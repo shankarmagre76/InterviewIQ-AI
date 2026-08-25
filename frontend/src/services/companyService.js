@@ -17,6 +17,15 @@ export const companyService = {
   },
 
   /**
+   * Get company profile of the authenticated recruiter user.
+   * @returns {Promise<Object>} API response payload with company details or null
+   */
+  async getMyCompany() {
+    const response = await api.get('/companies/my-company');
+    return response.data;
+  },
+
+  /**
    * Get company profile details by ID.
    * @param {string} id - Company ID
    * @returns {Promise<Object>} API response payload with company details
