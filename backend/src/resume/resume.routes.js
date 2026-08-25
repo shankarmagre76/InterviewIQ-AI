@@ -18,72 +18,26 @@ import resumeAnalysisRoutes from './resumeAnalysis.routes.js';
 
 const router = Router();
 
-// Enforce JWT Authentication and Candidate role for candidate resume endpoints
+// Enforce JWT Authentication for all resume endpoints
 router.use(authenticate);
-router.use(authorizeRoles('Student', 'Admin'));
 
 // Mount AI Resume Analysis sub-router endpoints (/analyze, /analysis, /analysis/history, /analysis/:id)
 router.use('/', resumeAnalysisRoutes);
 
 /**
- * @desc    Upload new resume document (PDF only, max 5MB) or replace current active resume
- * @route   POST /api/v1/profile/resume (also /api/v1/resumes)
- * @access  Private (JWT Protected)
- * Middleware Stack:
- * 1. authenticate (JWT auth)
- * 2. handleResumeUpload('resume') (Multer multipart form parser with 5MB limit)
- * 3. validateResumeFile (Strict PDF MIME, extension, size & magic-bytes validator)
- * 4. uploadResume (Controller handler)
+ * Candidate / Student Routes
  */
-router.post('/', handleResumeUpload('resume'), validateResumeFile, uploadResume);
+router.post('/', authorizeRoles('Student', 'Admin'), handleResumeUpload('resume'), validateResumeFile, uploadResume);
+router.get('/', authorizeRoles('Student', 'Admin'), getResume);
+router.get('/history', authorizeRoles('Student', 'Admin'), getResumeHistory);
+router.put('/', authorizeRoles('Student', 'Admin'), handleResumeUpload('resume'), updateResume);
+router.delete('/', authorizeRoles('Student', 'Admin'), deleteResume);
 
 /**
- * @desc    Get candidate's active resume details
- * @route   GET /api/v1/profile/resume (also /api/v1/resumes)
- * @access  Private (JWT Protected)
- */
-router.get('/', getResume);
-
-/**
- * @desc    Get complete resume upload history for candidate
- * @route   GET /api/v1/profile/resume/history (also /api/v1/resumes/history)
- * @access  Private (JWT Protected)
- */
-router.get('/history', getResumeHistory);
-
-/**
- * @desc    Replace resume document or update resume metadata
- * @route   PUT /api/v1/profile/resume
- * @access  Private (JWT Protected)
- */
-router.put('/', handleResumeUpload('resume'), updateResume);
-
-/**
- * @desc    Delete active resume document from Cloudinary storage and database
- * @route   DELETE /api/v1/profile/resume
- * @access  Private (JWT Protected)
- */
-router.delete('/', deleteResume);
-
-/**
- * @desc    Get specific resume document by ID
- * @route   GET /api/v1/profile/resume/:id
- * @access  Private (JWT Protected)
+ * Specific Resume Routes (GET /:id allowed for Student, Recruiter, Admin)
  */
 router.get('/:id', resumeIdParamValidation, getResume);
-
-/**
- * @desc    Update specific resume metadata by ID
- * @route   PUT /api/v1/profile/resume/:id
- * @access  Private (JWT Protected)
- */
-router.put('/:id', resumeIdParamValidation, updateResumeMetadataValidation, updateResume);
-
-/**
- * @desc    Delete specific resume document by ID
- * @route   DELETE /api/v1/profile/resume/:id
- * @access  Private (JWT Protected)
- */
-router.delete('/:id', resumeIdParamValidation, deleteResume);
+router.put('/:id', authorizeRoles('Student', 'Admin'), resumeIdParamValidation, updateResumeMetadataValidation, updateResume);
+router.delete('/:id', authorizeRoles('Student', 'Admin'), resumeIdParamValidation, deleteResume);
 
 export default router;

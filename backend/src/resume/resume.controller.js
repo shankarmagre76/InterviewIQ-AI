@@ -25,7 +25,7 @@ export const getResume = asyncHandler(async (req, res) => {
 
   let resume;
   if (id) {
-    resume = await resumeService.getResumeById(userId, id);
+    resume = await resumeService.getResumeById(req.user || userId, id);
   } else {
     resume = await resumeService.getActiveResumeByUser(userId);
   }

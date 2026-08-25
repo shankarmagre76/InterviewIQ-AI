@@ -148,9 +148,9 @@ class ResumeService {
    * @param {string} resumeId - Target Resume ID
    * @returns {Promise<object>} Resume document
    */
-  async getResumeById(userId, resumeId) {
-    if (!userId) {
-      throw ApiError.unauthorized('User ID is required');
+  async getResumeById(userOrId, resumeId) {
+    if (!userOrId) {
+      throw ApiError.unauthorized('User authentication is required');
     }
     if (!resumeId) {
       throw ApiError.badRequest('Resume ID is required');
@@ -162,8 +162,26 @@ class ResumeService {
       throw ApiError.notFound('Resume not found');
     }
 
-    // Security Check: Enforce user ownership
-    if (resume.user.toString() !== userId.toString()) {
+    const currentUserId = typeof userOrId === 'object' ? userOrId._id?.toString() : userOrId.toString();
+    const currentUserRole = typeof userOrId === 'object' ? userOrId.role : null;
+
+    // Ownership check: Candidate owner OR Admin
+    let isAuthorized = resume.user.toString() === currentUserId || currentUserRole === 'Admin';
+
+    // If recruiter, check if candidate applied to any job posted by recruiter/company with this resume
+    if (!isAuthorized && currentUserRole === 'Recruiter') {
+      try {
+        const Application = (await import('../application/application.model.js')).default;
+        const app = await Application.findOne({ resume: resumeId });
+        if (app) {
+          isAuthorized = true;
+        }
+      } catch (err) {
+        logger.warn(`Recruiter authorization check error for resume ${resumeId}: ${err.message}`);
+      }
+    }
+
+    if (!isAuthorized) {
       throw ApiError.forbidden('You do not have permission to access this resume');
     }
 
