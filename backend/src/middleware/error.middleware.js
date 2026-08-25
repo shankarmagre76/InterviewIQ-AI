@@ -76,7 +76,11 @@ const errorHandler = (err, req, res, next) => {
   const safeLogMsg = sanitizeLogMessage(
     `[${req.method}] ${req.originalUrl} - ${error.statusCode} - ${error.message} [ReqID: ${req.requestId || 'N/A'}]`
   );
-  logger.error(safeLogMsg);
+  if (error.statusCode >= 500) {
+    logger.error(safeLogMsg);
+  } else {
+    logger.info(safeLogMsg);
+  }
 
   res.status(error.statusCode).json(responsePayload);
 };

@@ -114,20 +114,17 @@ class ProfileService {
     const cloudinaryResult = await uploadToCloudinary(fileBuffer, 'interviewiq/profiles');
     const secureUrl = cloudinaryResult.secure_url;
 
-    // Save secure URL in Profile model
-    profile.profileImage = secureUrl;
-    await profile.save();
+    // Save secure URL in Profile model using findOneAndUpdate to scope validation strictly to profileImage
+    const updatedProfile = await Profile.findOneAndUpdate(
+      { user: userId },
+      { $set: { profileImage: secureUrl } },
+      { new: true, runValidators: true }
+    ).populate('user', 'firstName lastName email role phone profileImage isEmailVerified isActive');
 
     // Synchronize profileImage URL on User model
     await User.findByIdAndUpdate(userId, { profileImage: secureUrl });
 
-    // Re-populate user details for return payload
-    await profile.populate(
-      'user',
-      'firstName lastName email role phone profileImage isEmailVerified isActive'
-    );
-
-    return profile;
+    return updatedProfile;
   }
 
   /* ==========================================================================
@@ -880,10 +877,13 @@ class ProfileService {
       uploadedDate: now,
     };
 
-    profile.resume = resumeData;
-    await profile.save();
+    const updatedProfile = await Profile.findOneAndUpdate(
+      { user: userId },
+      { $set: { resume: resumeData } },
+      { new: true, runValidators: true }
+    );
 
-    return profile.resume;
+    return updatedProfile.resume;
   }
 
   /**
@@ -908,18 +908,24 @@ class ProfileService {
       await deleteRawFromCloudinary(existingPublicId || existingUrl);
     }
 
-    profile.resume = {
-      resumeUrl: '',
-      cloudinaryPublicId: '',
-      originalFileName: '',
-      fileSize: 0,
-      uploadedAt: null,
-      url: '',
-      publicId: '',
-      uploadedDate: null,
-    };
-
-    await profile.save();
+    await Profile.findOneAndUpdate(
+      { user: userId },
+      {
+        $set: {
+          resume: {
+            resumeUrl: '',
+            cloudinaryPublicId: '',
+            originalFileName: '',
+            fileSize: 0,
+            uploadedAt: null,
+            url: '',
+            publicId: '',
+            uploadedDate: null,
+          },
+        },
+      },
+      { new: true, runValidators: true }
+    );
     return true;
   }
 

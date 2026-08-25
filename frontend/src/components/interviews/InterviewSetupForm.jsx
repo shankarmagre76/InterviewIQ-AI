@@ -94,6 +94,7 @@ export const InterviewSetupForm = ({ onCreatedSuccess }) => {
   const [interviewType, setInterviewType] = useState('Technical');
   const [difficulty, setDifficulty] = useState('Intermediate');
   const [totalQuestions, setTotalQuestions] = useState(5);
+  const [estimatedDuration, setEstimatedDuration] = useState(30);
   const [mode] = useState('Text');
 
   // UI state

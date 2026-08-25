@@ -52,6 +52,12 @@ const startServer = async () => {
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
+  process.once('SIGUSR2', () => {
+    logger.info('Received SIGUSR2 from nodemon. Gracefully closing HTTP server...');
+    server.close(() => {
+      process.kill(process.pid, 'SIGUSR2');
+    });
+  });
 };
 
 startServer();
