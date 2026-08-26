@@ -22,6 +22,8 @@ export const getStatusBadgeVariant = (status) => {
     case 'Technical Round':
     case 'HR Round':
       return { variant: 'info', label: status };
+    case 'Shortlisted':
+      return { variant: 'primary', label: 'Shortlisted' };
     case 'Under Review':
       return { variant: 'primary', label: 'Under Review' };
     case 'Applied':

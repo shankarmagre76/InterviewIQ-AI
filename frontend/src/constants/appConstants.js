@@ -157,6 +157,7 @@ export const STATUS_TYPES = {
 export const APPLICATION_STATUSES = [
   'Applied',
   'Under Review',
+  'Shortlisted',
   'Interview Scheduled',
   'Technical Round',
   'HR Round',

@@ -94,7 +94,7 @@ export const jobService = {
    * @param {string} jobId - Job ObjectId to save
    */
   async saveJob(jobId) {
-    const response = await api.post(API_ENDPOINTS.SAVED_JOB.BASE, { jobId });
+    const response = await api.post(API_ENDPOINTS.SAVED_JOB.BASE, { job: jobId, jobId });
     return response.data;
   },
 

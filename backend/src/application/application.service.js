@@ -150,6 +150,22 @@ class ApplicationService {
    * @returns {Promise<object>} Paginated application list
    */
   async getJobApplications(jobId, currentUser, queryOptions = {}) {
+    if (jobId === 'all') {
+      let filter = {};
+      if (currentUser.role === 'Recruiter') {
+        const recruiterJobs = await jobRepository.searchJobs(
+          { createdBy: currentUser._id },
+          { limit: 1000, includeAllStatuses: true }
+        );
+        const jobIds = recruiterJobs.jobs.map((j) => j._id);
+        filter = { job: { $in: jobIds } };
+      }
+      if (queryOptions.status) {
+        filter.status = queryOptions.status;
+      }
+      return await applicationRepository.getApplications(filter, queryOptions);
+    }
+
     const job = await jobRepository.getJob(jobId, '');
     if (!job) {
       throw ApiError.notFound('Job posting not found');

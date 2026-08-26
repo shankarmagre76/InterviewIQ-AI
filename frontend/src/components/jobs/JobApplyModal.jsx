@@ -32,6 +32,7 @@ export const JobApplyModal = ({
   const [activeResume, setActiveResume] = useState(null);
   const [loadingResume, setLoadingResume] = useState(true);
   const [coverLetter, setCoverLetter] = useState('');
+  const [submittedApplication, setSubmittedApplication] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -39,6 +40,7 @@ export const JobApplyModal = ({
     if (isOpen) {
       setStep('form');
       setCoverLetter('');
+      setSubmittedApplication(null);
       setError(null);
       fetchActiveResume();
     }

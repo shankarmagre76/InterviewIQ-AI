@@ -31,8 +31,11 @@ export const RecruiterJobsPage = () => {
     employmentType: 'Full-time',
     minExpYears: 1,
     maxExpYears: 5,
-    salaryMin: 50000,
-    salaryMax: 100000,
+    salaryMin: '',
+    salaryMax: '',
+    salaryCurrency: 'USD',
+    salaryPeriod: 'Yearly',
+    salaryIsDisclosed: true,
     applicationDeadline: defaultDeadline(),
     status: 'Active',
   });
@@ -85,8 +88,11 @@ export const RecruiterJobsPage = () => {
         employmentType: job.employmentType || 'Full-time',
         minExpYears: job.experience?.minYears ?? job.minExp ?? 1,
         maxExpYears: job.experience?.maxYears ?? job.maxExp ?? 5,
-        salaryMin: job.salary?.min ?? job.salaryRange?.min ?? 50000,
-        salaryMax: job.salary?.max ?? job.salaryRange?.max ?? 100000,
+        salaryMin: job.salary?.min != null ? job.salary.min : (job.salaryRange?.min ?? ''),
+        salaryMax: job.salary?.max != null ? job.salary.max : (job.salaryRange?.max ?? ''),
+        salaryCurrency: job.salary?.currency || 'USD',
+        salaryPeriod: job.salary?.period || 'Yearly',
+        salaryIsDisclosed: job.salary?.isDisclosed !== false,
         applicationDeadline: job.applicationDeadline
           ? new Date(job.applicationDeadline).toISOString().split('T')[0]
           : defaultDeadline(),
@@ -103,8 +109,11 @@ export const RecruiterJobsPage = () => {
         employmentType: 'Full-time',
         minExpYears: 1,
         maxExpYears: 5,
-        salaryMin: 50000,
-        salaryMax: 100000,
+        salaryMin: '',
+        salaryMax: '',
+        salaryCurrency: 'USD',
+        salaryPeriod: 'Yearly',
+        salaryIsDisclosed: true,
         applicationDeadline: defaultDeadline(),
         status: 'Active',
       });
@@ -124,6 +133,25 @@ export const RecruiterJobsPage = () => {
       return;
     }
 
+    const minSal = form.salaryMin !== '' && form.salaryMin !== null ? Number(form.salaryMin) : undefined;
+    const maxSal = form.salaryMax !== '' && form.salaryMax !== null ? Number(form.salaryMax) : undefined;
+
+    if (minSal !== undefined && minSal < 0) {
+      setErrors(['Minimum salary cannot be negative.']);
+      setSaving(false);
+      return;
+    }
+    if (maxSal !== undefined && maxSal < 0) {
+      setErrors(['Maximum salary cannot be negative.']);
+      setSaving(false);
+      return;
+    }
+    if (minSal !== undefined && maxSal !== undefined && maxSal < minSal) {
+      setErrors(['Maximum salary cannot be less than minimum salary.']);
+      setSaving(false);
+      return;
+    }
+
     const skillsArray = form.requiredSkills
       .split(',')
       .map((s) => s.trim())
@@ -138,11 +166,11 @@ export const RecruiterJobsPage = () => {
         maxYears: Number(form.maxExpYears) || 5,
       },
       salary: {
-        min: Number(form.salaryMin) || 0,
-        max: Number(form.salaryMax) || 0,
-        currency: 'USD',
-        period: 'Yearly',
-        isDisclosed: true,
+        min: minSal ?? 0,
+        max: maxSal ?? 0,
+        currency: form.salaryCurrency || 'USD',
+        period: form.salaryPeriod || 'Yearly',
+        isDisclosed: form.salaryIsDisclosed !== false,
       },
       location: form.location || 'Remote',
       workMode: form.workMode,
@@ -423,6 +451,62 @@ export const RecruiterJobsPage = () => {
                     onChange={(e) => setForm({ ...form, maxExpYears: e.target.value })}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-indigo-500"
                   />
+                </div>
+              </div>
+
+              {/* Salary Configuration Fields */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800/80">
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-slate-300 font-semibold text-xs mb-1">Minimum Salary</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 70000"
+                    value={form.salaryMin}
+                    onChange={(e) => setForm({ ...form, salaryMin: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-slate-200 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-slate-300 font-semibold text-xs mb-1">Maximum Salary</label>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="e.g. 110000"
+                    value={form.salaryMax}
+                    onChange={(e) => setForm({ ...form, salaryMax: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-slate-200 focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-slate-300 font-semibold text-xs mb-1">Currency</label>
+                  <select
+                    value={form.salaryCurrency}
+                    onChange={(e) => setForm({ ...form, salaryCurrency: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-slate-200 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="INR">INR (₹)</option>
+                    <option value="GBP">GBP (£)</option>
+                    <option value="CAD">CAD (C$)</option>
+                    <option value="AUD">AUD (A$)</option>
+                  </select>
+                </div>
+
+                <div className="col-span-2 sm:col-span-1">
+                  <label className="block text-slate-300 font-semibold text-xs mb-1">Salary Period</label>
+                  <select
+                    value={form.salaryPeriod}
+                    onChange={(e) => setForm({ ...form, salaryPeriod: e.target.value })}
+                    className="w-full px-3 py-2 text-xs rounded-xl bg-slate-900 border border-slate-800 text-slate-200 focus:outline-none focus:border-indigo-500"
+                  >
+                    <option value="Yearly">Annual / yr</option>
+                    <option value="Monthly">Monthly / mo</option>
+                    <option value="Hourly">Hourly / hr</option>
+                  </select>
                 </div>
               </div>
 

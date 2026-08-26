@@ -14,7 +14,8 @@ import { EmptyState } from '../ui/EmptyState';
 const STATUS_COLORS = {
   'Applied': '#6366f1', // Indigo
   'Under Review': '#f59e0b', // Amber
-  'Interview Scheduled': '#06b6d4', // Cyan
+  'Shortlisted': '#06b6d4', // Cyan
+  'Interview Scheduled': '#8b5cf6', // Violet
   'Technical Round': '#3b82f6', // Blue
   'HR Round': '#14b8a6', // Teal
   'Offered': '#10b981', // Emerald

@@ -54,7 +54,15 @@ export const JobCard = ({
   const formatSalary = () => {
     const s = job.salary;
     if (!s || !s.isDisclosed || (!s.min && !s.max)) return null;
-    const currencySymbol = s.currency === 'USD' ? '$' : `${s.currency} `;
+    const currencySymbols = {
+      USD: '$',
+      EUR: '€',
+      INR: '₹',
+      GBP: '£',
+      CAD: 'C$',
+      AUD: 'A$',
+    };
+    const currencySymbol = currencySymbols[s.currency] || (s.currency ? `${s.currency} ` : '$');
     const periodStr = s.period === 'Hourly' ? '/hr' : s.period === 'Monthly' ? '/mo' : '/yr';
 
     if (s.min && s.max) {

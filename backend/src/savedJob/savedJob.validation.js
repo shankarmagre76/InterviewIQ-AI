@@ -17,14 +17,16 @@ export const validate = (req, res, next) => {
   next();
 };
 
-/**
- * Save Job API Validation Rules
- */
 export const saveJobValidation = [
   body('job')
+    .optional()
     .trim()
-    .notEmpty()
-    .withMessage('Job ID is required')
+    .isMongoId()
+    .withMessage('Job ID must be a valid MongoDB ObjectId'),
+
+  body('jobId')
+    .optional()
+    .trim()
     .isMongoId()
     .withMessage('Job ID must be a valid MongoDB ObjectId'),
 
@@ -33,6 +35,13 @@ export const saveJobValidation = [
     .trim()
     .isMongoId()
     .withMessage('User ID must be a valid MongoDB ObjectId'),
+
+  body().custom((_value, { req }) => {
+    if (!req?.body?.job && !req?.body?.jobId) {
+      throw new Error('Job ID is required');
+    }
+    return true;
+  }),
 ];
 
 /**

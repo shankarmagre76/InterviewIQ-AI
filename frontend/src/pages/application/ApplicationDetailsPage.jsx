@@ -251,7 +251,7 @@ export const ApplicationDetailsPage = () => {
                   </div>
                   <div className="overflow-hidden">
                     <span className="font-bold text-slate-100 block truncate">
-                      {resume.fileName || 'Candidate_Resume.pdf'}
+                      {resume.originalName || resume.fileName || 'Candidate_Resume.pdf'}
                     </span>
                     <span className="text-[11px] text-slate-400 font-mono block">
                       Uploaded candidate PDF document
@@ -259,9 +259,9 @@ export const ApplicationDetailsPage = () => {
                   </div>
                 </div>
 
-                {resume.fileUrl && (
+                {(resume.url || resume.fileUrl || resume.resumeUrl) && (
                   <a
-                    href={resume.fileUrl}
+                    href={resume.url || resume.fileUrl || resume.resumeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 font-semibold text-xs flex items-center gap-1.5 transition-colors shrink-0"

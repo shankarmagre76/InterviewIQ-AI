@@ -72,7 +72,7 @@ class ApplicationRepository {
           populate: { path: 'company', select: 'companyName companyLogo' },
         })
         .populate('company', 'companyName companyLogo website')
-        .populate('resume', 'originalName url fileSize')
+        .populate('resume', 'originalName url fileSize mimeType publicId createdAt')
         .exec(),
       Application.countDocuments(queryFilter),
     ]);
@@ -97,7 +97,16 @@ class ApplicationRepository {
     updateData,
     options = { new: true, runValidators: true }
   ) {
-    return await Application.findByIdAndUpdate(id, updateData, options);
+    return await Application.findByIdAndUpdate(id, updateData, options)
+      .populate('user', 'firstName lastName email profileImage phone')
+      .populate({
+        path: 'job',
+        select: 'title location workMode employmentType salary status applicationDeadline',
+        populate: { path: 'company', select: 'companyName companyLogo' },
+      })
+      .populate('company', 'companyName companyLogo website')
+      .populate('resume', 'originalName url fileSize mimeType publicId createdAt')
+      .exec();
   }
 
   /**

@@ -88,6 +88,7 @@ async function runApplicationTests() {
     const expectedStatuses = [
       'Applied',
       'Under Review',
+      'Shortlisted',
       'Interview Scheduled',
       'Technical Round',
       'HR Round',
@@ -99,7 +100,7 @@ async function runApplicationTests() {
     const matchAll = expectedStatuses.every((st) => APPLICATION_STATUSES.includes(st));
     assert(
       matchAll && APPLICATION_STATUSES.length === expectedStatuses.length,
-      '10. All 8 required application status enums defined accurately'
+      '10. All 9 required application status enums defined accurately'
     );
   } catch (err) {
     assert(false, '10. All 8 required application status enums defined accurately', err.message);

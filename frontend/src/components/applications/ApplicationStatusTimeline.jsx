@@ -23,7 +23,7 @@ export const ApplicationStatusTimeline = ({ status = 'Applied', className = '' }
   // Determine current active stage index (0 to 3)
   const getStageIndex = (currentStatus) => {
     if (currentStatus === 'Applied') return 0;
-    if (currentStatus === 'Under Review') return 1;
+    if (currentStatus === 'Under Review' || currentStatus === 'Shortlisted') return 1;
     if (
       currentStatus === 'Interview Scheduled' ||
       currentStatus === 'Technical Round' ||

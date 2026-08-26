@@ -6,6 +6,7 @@ import {
   Sparkles,
   Calendar,
   ExternalLink,
+  Eye,
 } from 'lucide-react';
 
 import { Card, CardContent } from '../ui/Card';
@@ -101,12 +102,20 @@ export const ResumeCard = ({
         {/* Action Controls Toolbar */}
         <div className="pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            {downloadUrl && (
+            {onView ? (
+              <Button
+                size="xs"
+                variant="outline"
+                onClick={onView}
+                leftIcon={<Eye className="w-3.5 h-3.5" />}
+              >
+                View Resume
+              </Button>
+            ) : downloadUrl ? (
               <a
                 href={downloadUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={onView}
                 className="inline-flex"
               >
                 <Button
@@ -116,6 +125,18 @@ export const ResumeCard = ({
                 >
                   View / Download PDF
                 </Button>
+              </a>
+            ) : null}
+
+            {onView && downloadUrl && (
+              <a
+                href={downloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-slate-200 transition-colors inline-flex items-center"
+                title="Open PDF directly in new tab"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
               </a>
             )}
 
