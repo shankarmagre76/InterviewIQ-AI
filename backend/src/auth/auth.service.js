@@ -1,5 +1,5 @@
 import User from './auth.model.js';
-import Profile from '../models/profile.model.js';
+import Profile from '../profile/profile.model.js';
 import ApiError from '../utils/ApiError.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import mongoose from 'mongoose';
@@ -12,6 +12,11 @@ class AuthService {
    */
   async register(userData) {
     const { firstName, lastName, email, password, role, phone } = userData;
+
+    // Disallow self-assignment of Admin role
+    if (role && String(role).toLowerCase() === 'admin') {
+      throw ApiError.forbidden('Admin role cannot be self-assigned');
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });

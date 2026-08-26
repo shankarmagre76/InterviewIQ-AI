@@ -38,6 +38,14 @@ class ApiError extends Error {
     return new ApiError(404, msg);
   }
 
+  static conflict(msg = 'Conflict detected') {
+    return new ApiError(409, msg);
+  }
+
+  static tooManyRequests(msg = 'Too many requests. Please try again later.') {
+    return new ApiError(429, msg);
+  }
+
   static internal(msg = 'Internal Server Error') {
     return new ApiError(500, msg);
   }

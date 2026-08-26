@@ -1,0 +1,531 @@
+import mongoose from 'mongoose';
+
+/**
+ * Skill Subdocument Schema
+ */
+const skillSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'Skill name is required'],
+      trim: true,
+      maxlength: [50, 'Skill name cannot exceed 50 characters'],
+    },
+    level: {
+      type: String,
+      required: [true, 'Skill level is required'],
+      enum: {
+        values: ['Beginner', 'Intermediate', 'Advanced'],
+        message: '{VALUE} is not a valid skill level. Allowed levels: Beginner, Intermediate, Advanced',
+      },
+      default: 'Beginner',
+      trim: true,
+    },
+  },
+  { _id: true }
+);
+
+/**
+ * Education Subdocument Schema
+ */
+const educationSchema = new mongoose.Schema(
+  {
+    institute: {
+      type: String,
+      required: [true, 'Institute / College name is required'],
+      trim: true,
+      maxlength: [100, 'Institute name cannot exceed 100 characters'],
+    },
+    degree: {
+      type: String,
+      required: [true, 'Degree name is required'],
+      trim: true,
+      maxlength: [100, 'Degree name cannot exceed 100 characters'],
+    },
+    branch: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Branch / Specialization cannot exceed 100 characters'],
+      default: '',
+    },
+    cgpa: {
+      type: Number,
+      min: [0, 'CGPA / Grade score cannot be negative'],
+      max: [100, 'CGPA / Grade score cannot exceed 100'],
+      default: null,
+    },
+    startYear: {
+      type: Number,
+      required: [true, 'Start year is required'],
+      min: [1950, 'Start year must be 1950 or later'],
+      max: [2100, 'Start year is invalid'],
+    },
+    endYear: {
+      type: Number,
+      min: [1950, 'End year must be 1950 or later'],
+      max: [2100, 'End year is invalid'],
+      default: null,
+    },
+    current: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  { _id: true }
+);
+
+/**
+ * Pre-validate hook for Education subdocument to ensure endYear is not before startYear
+ */
+educationSchema.pre('validate', function (next) {
+  if (this.startYear && this.endYear && !this.current) {
+    if (this.endYear < this.startYear) {
+      return next(new Error('End year cannot be prior to start year'));
+    }
+  }
+  next();
+});
+
+/**
+ * Experience Subdocument Schema
+ */
+const experienceSchema = new mongoose.Schema(
+  {
+    company: {
+      type: String,
+      required: [true, 'Company name is required'],
+      trim: true,
+      maxlength: [100, 'Company name cannot exceed 100 characters'],
+    },
+    position: {
+      type: String,
+      required: [true, 'Job position / title is required'],
+      trim: true,
+      maxlength: [100, 'Position title cannot exceed 100 characters'],
+    },
+    employmentType: {
+      type: String,
+      enum: {
+        values: ['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance', 'Self-employed', ''],
+        message: '{VALUE} is not a valid employment type choice',
+      },
+      default: 'Full-time',
+      trim: true,
+    },
+    location: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Location cannot exceed 100 characters'],
+      default: '',
+    },
+    startDate: {
+      type: Date,
+      required: [true, 'Start date is required'],
+    },
+    endDate: {
+      type: Date,
+      default: null,
+    },
+    current: {
+      type: Boolean,
+      default: false,
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Description cannot exceed 1000 characters'],
+      default: '',
+    },
+  },
+  { _id: true }
+);
+
+/**
+ * Pre-validate hook for Experience subdocument to ensure endDate is not before startDate
+ */
+experienceSchema.pre('validate', function (next) {
+  if (this.startDate && this.endDate && !this.current) {
+    if (new Date(this.endDate) < new Date(this.startDate)) {
+      return next(new Error('End date cannot be prior to start date'));
+    }
+  }
+  next();
+});
+
+/**
+ * Social Links Embedded Schema
+ */
+const socialLinksSchema = new mongoose.Schema(
+  {
+    github: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    linkedin: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    portfolio: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    leetcode: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    hackerrank: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    codechef: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+  },
+  { _id: false }
+);
+
+/**
+ * Resume Embedded Schema
+ */
+const resumeSchema = new mongoose.Schema(
+  {
+    resumeUrl: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    cloudinaryPublicId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    originalFileName: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    fileSize: {
+      type: Number,
+      default: 0,
+    },
+    uploadedAt: {
+      type: Date,
+      default: null,
+    },
+    url: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    publicId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    uploadedDate: {
+      type: Date,
+      default: null,
+    },
+  },
+  { _id: false }
+);
+
+/**
+ * Certification Subdocument Schema
+ */
+const certificationSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, 'Certification name is required'],
+      trim: true,
+      maxlength: [100, 'Certification name cannot exceed 100 characters'],
+    },
+    name: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    issuingOrganization: {
+      type: String,
+      required: [true, 'Issuing organization is required'],
+      trim: true,
+      maxlength: [100, 'Issuing organization cannot exceed 100 characters'],
+    },
+    issueDate: {
+      type: Date,
+      default: null,
+    },
+    expiryDate: {
+      type: Date,
+      default: null,
+    },
+    doesNotExpire: {
+      type: Boolean,
+      default: false,
+    },
+    credentialId: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Credential ID cannot exceed 100 characters'],
+      default: '',
+    },
+    credentialUrl: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+  },
+  { _id: true }
+);
+
+/**
+ * Project Subdocument Schema
+ */
+const projectSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      required: [true, 'Project title is required'],
+      trim: true,
+      maxlength: [100, 'Project title cannot exceed 100 characters'],
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Description cannot exceed 1000 characters'],
+      default: '',
+    },
+    technologies: {
+      type: [String],
+      default: [],
+    },
+    role: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Role title cannot exceed 100 characters'],
+      default: '',
+    },
+    startDate: {
+      type: Date,
+      default: null,
+    },
+    endDate: {
+      type: Date,
+      default: null,
+    },
+    current: {
+      type: Boolean,
+      default: false,
+    },
+    githubUrl: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    liveUrl: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    projectType: {
+      type: String,
+      enum: ['Personal', 'Academic', 'Professional', 'Open Source', ''],
+      default: 'Personal',
+    },
+  },
+  { _id: true }
+);
+
+/**
+ * Profile Schema
+ * Establishes a one-to-one relationship with the User model to store extended user profile information.
+ */
+const profileSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'User ID is required for profile creation'],
+      unique: true,
+    },
+    firstName: {
+      type: String,
+      trim: true,
+      maxlength: [50, 'First name cannot exceed 50 characters'],
+      default: '',
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      maxlength: [50, 'Last name cannot exceed 50 characters'],
+      default: '',
+    },
+    phone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    headline: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Headline cannot exceed 100 characters'],
+      default: '',
+    },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: [500, 'Bio cannot exceed 500 characters'],
+      default: '',
+    },
+    gender: {
+      type: String,
+      enum: {
+        values: ['Male', 'Female', 'Other', 'Prefer not to say', ''],
+        message: '{VALUE} is not a valid gender choice',
+      },
+      default: 'Prefer not to say',
+    },
+    dateOfBirth: {
+      type: Date,
+      default: null,
+    },
+    currentLocation: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Current location cannot exceed 100 characters'],
+      default: '',
+    },
+    preferredLocation: {
+      type: String,
+      trim: true,
+      maxlength: [100, 'Preferred location cannot exceed 100 characters'],
+      default: '',
+    },
+    website: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    profileImage: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    skills: {
+      type: [skillSchema],
+      default: [],
+    },
+    education: {
+      type: [educationSchema],
+      default: [],
+    },
+    experience: {
+      type: [experienceSchema],
+      default: [],
+    },
+    socialLinks: {
+      type: socialLinksSchema,
+      default: {},
+    },
+    resume: {
+      type: resumeSchema,
+      default: {},
+    },
+    projects: {
+      type: [projectSchema],
+      default: [],
+    },
+    certifications: {
+      type: [certificationSchema],
+      default: [],
+    },
+  },
+  {
+    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
+
+/* ==========================================================================
+   Indexes for Production Performance Optimization
+   ========================================================================== */
+
+// Compound index on first name and last name for fast candidate name search
+profileSchema.index({ firstName: 1, lastName: 1 });
+
+// Single field index for filtering profiles by location
+profileSchema.index({ currentLocation: 1 });
+
+// Multikey index for querying candidate profiles by skill name
+profileSchema.index({ 'skills.name': 1 });
+
+// Multikey index for querying candidate profiles by institute name
+profileSchema.index({ 'education.institute': 1 });
+
+// Multikey index for querying candidate profiles by company name
+profileSchema.index({ 'experience.company': 1 });
+
+/* ==========================================================================
+   Pre-Validation Hooks
+   ========================================================================== */
+
+/**
+ * Pre-validate hook to prevent duplicate skills (case-insensitive) in the skills array
+ */
+profileSchema.pre('validate', function (next) {
+  if (this.skills && Array.isArray(this.skills)) {
+    const seenSkills = new Set();
+    for (const skill of this.skills) {
+      if (skill.name) {
+        const normalizedName = skill.name.trim().toLowerCase();
+        if (seenSkills.has(normalizedName)) {
+          return next(new Error(`Duplicate skill "${skill.name.trim()}" is not allowed.`));
+        }
+        seenSkills.add(normalizedName);
+      }
+    }
+  }
+  next();
+});
+
+/* ==========================================================================
+   Virtual Properties
+   ========================================================================== */
+
+/**
+ * Virtual getter for computing Profile Full Name on the fly
+ */
+profileSchema.virtual('fullName').get(function () {
+  if (this.firstName || this.lastName) {
+    return `${this.firstName || ''} ${this.lastName || ''}`.trim();
+  }
+  return '';
+});
+
+/* ==========================================================================
+   JSON Transformations
+   ========================================================================== */
+
+/**
+ * Custom toJSON transformation to remove Mongoose internal version key (__v)
+ */
+profileSchema.set('toJSON', {
+  virtuals: true,
+  transform: (doc, ret) => {
+    delete ret.__v;
+    return ret;
+  },
+});
+
+const Profile = mongoose.models.Profile || mongoose.model('Profile', profileSchema);
+
+export default Profile;

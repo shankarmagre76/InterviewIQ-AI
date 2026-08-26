@@ -1,0 +1,515 @@
+{
+	"info": {
+		"_postman_id": "9a11b2c3-4d5e-6f7a-8b9c-0d1e2f3a4b5c",
+		"name": "InterviewIQ AI - Phase 9.11 Roadmap & Notification APIs",
+		"description": "Complete Postman API Collection for Phase 9.11 covering Learning Roadmap, Task, and Notification APIs across 20 test scenarios.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000/api/v1",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "YOUR_JWT_ACCESS_TOKEN_HERE",
+			"type": "string"
+		},
+		{
+			"key": "roadmapId",
+			"value": "60d5ecb8b5c9c22340e4f1a1",
+			"type": "string"
+		},
+		{
+			"key": "taskId",
+			"value": "60d5ecb8b5c9c22340e4f1b2",
+			"type": "string"
+		},
+		{
+			"key": "notificationId",
+			"value": "60d5ecb8b5c9c22340e4f1c3",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Roadmap APIs",
+			"item": [
+				{
+					"name": "Generate AI Learning Roadmap",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"targetRole\": \"Senior Full-Stack Engineer\",\n  \"forceRegenerate\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/generate",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"generate"
+							]
+						},
+						"description": "Generates or regenerates candidate AI Learning Roadmap utilizing profile, ATS analysis, and interview history."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Active Roadmap",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/active",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"active"
+							]
+						},
+						"description": "Retrieves candidate active learning roadmap and tasks grouped by phase."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Roadmap by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/{{roadmapId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"{{roadmapId}}"
+							]
+						},
+						"description": "Retrieves specific learning roadmap document by ID with candidate ownership enforcement."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Roadmap History (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps?page=1&limit=10&status=ACTIVE",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								},
+								{
+									"key": "status",
+									"value": "ACTIVE"
+								}
+							]
+						},
+						"description": "Retrieves candidate historical roadmaps with pagination metadata."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Roadmap",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"title\": \"Updated Full-Stack Master Plan\",\n  \"description\": \"Refined learning objectives for backend engineering.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/{{roadmapId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"{{roadmapId}}"
+							]
+						},
+						"description": "Updates editable properties of candidate learning roadmap."
+					},
+					"response": []
+				},
+				{
+					"name": "Archive Roadmap",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/{{roadmapId}}/archive",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"{{roadmapId}}",
+								"archive"
+							]
+						},
+						"description": "Archives active learning roadmap document."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Roadmap",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/{{roadmapId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"{{roadmapId}}"
+							]
+						},
+						"description": "Deletes learning roadmap and cascade deletes all child tasks."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Learning Task APIs",
+			"item": [
+				{
+					"name": "Get Roadmap Tasks",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/{{roadmapId}}/tasks?status=NOT_STARTED",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"{{roadmapId}}",
+								"tasks"
+							],
+							"query": [
+								{
+									"key": "status",
+									"value": "NOT_STARTED"
+								}
+							]
+						},
+						"description": "Retrieves learning tasks belonging to roadmap sorted by sequence order."
+					},
+					"response": []
+				},
+				{
+					"name": "Start Task",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/tasks/{{taskId}}/start",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"tasks",
+								"{{taskId}}",
+								"start"
+							]
+						},
+						"description": "Transitions task status from NOT_STARTED to IN_PROGRESS."
+					},
+					"response": []
+				},
+				{
+					"name": "Complete Task",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/tasks/{{taskId}}/complete",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"tasks",
+								"{{taskId}}",
+								"complete"
+							]
+						},
+						"description": "Marks task COMPLETED and recalculates phase and roadmap overall progress."
+					},
+					"response": []
+				},
+				{
+					"name": "Skip Task",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/tasks/{{taskId}}/skip",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"tasks",
+								"{{taskId}}",
+								"skip"
+							]
+						},
+						"description": "Marks task SKIPPED and adjusts phase progress calculations."
+					},
+					"response": []
+				},
+				{
+					"name": "Reopen Task",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/roadmaps/tasks/{{taskId}}/reopen",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"roadmaps",
+								"tasks",
+								"{{taskId}}",
+								"reopen"
+							]
+						},
+						"description": "Reopens a COMPLETED or SKIPPED task back to IN_PROGRESS state."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notification APIs",
+			"item": [
+				{
+					"name": "Get Notifications (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications?page=1&limit=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "1"
+								},
+								{
+									"key": "limit",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Retrieves candidate notifications sorted by creation date with pagination."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Unread Notifications",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/unread?page=1&limit=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								"unread"
+							]
+						},
+						"description": "Retrieves unread notifications and total unread counter."
+					},
+					"response": []
+				},
+				{
+					"name": "Mark Notification as Read",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/{{notificationId}}/read",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								"{{notificationId}}",
+								"read"
+							]
+						},
+						"description": "Marks a single notification document as read."
+					},
+					"response": []
+				},
+				{
+					"name": "Mark All Notifications as Read",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/read-all",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								"read-all"
+							]
+						},
+						"description": "Bulk marks all unread candidate notifications as read."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Notification",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{authToken}}"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/notifications/{{notificationId}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"notifications",
+								"{{notificationId}}"
+							]
+						},
+						"description": "Deletes notification document."
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}

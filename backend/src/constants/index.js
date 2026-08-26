@@ -2,9 +2,12 @@
  * Application Constant Definitions
  */
 export const USER_ROLES = {
-  CANDIDATE: 'candidate',
-  INTERVIEWER: 'interviewer',
-  ADMIN: 'admin',
+  STUDENT: 'Student',
+  RECRUITER: 'Recruiter',
+  ADMIN: 'Admin',
+  // Backward compatibility aliases
+  CANDIDATE: 'Student',
+  INTERVIEWER: 'Recruiter',
 };
 
 export const HTTP_STATUS = {

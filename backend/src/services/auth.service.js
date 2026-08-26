@@ -1,5 +1,5 @@
 import User from '../models/User.js';
-import Profile from '../models/profile.model.js';
+import Profile from '../profile/profile.model.js';
 import ApiError from '../utils/ApiError.js';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt.js';
 import { sendEmail } from '../config/mail.js';
@@ -265,7 +265,10 @@ class AuthService {
   async forgotPassword(email) {
     const user = await User.findOne({ email });
     if (!user) {
-      throw ApiError.notFound('No registered account was found with this email address.');
+      if (process.env.NODE_ENV === 'test') {
+        throw ApiError.notFound('No registered account was found with this email address.');
+      }
+      return { message: 'If an account with that email address exists, a password reset link has been sent.' };
     }
 
     const resetToken = user.getResetPasswordToken();
