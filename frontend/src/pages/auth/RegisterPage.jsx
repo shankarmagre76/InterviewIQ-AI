@@ -28,6 +28,8 @@ const calculatePasswordStrength = (pwd) => {
   return { score: 100, label: 'Excellent', color: 'emerald' };
 };
 
+import { useToast } from '../../hooks/useToast';
+
 export const RegisterPage = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -43,6 +45,7 @@ export const RegisterPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { register } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
 
   const passwordStrength = calculatePasswordStrength(password);
@@ -105,10 +108,14 @@ export const RegisterPage = () => {
         role,
       });
 
+      toast.success('Account Created!', `Welcome to InterviewIQ AI, ${firstName.trim()}!`);
+
       const targetPath = role === 'Recruiter' ? '/recruiter/dashboard' : '/dashboard';
       navigate(targetPath, { replace: true });
     } catch (err) {
-      setApiError(parseApiError(err));
+      const parsedErr = parseApiError(err);
+      setApiError(parsedErr);
+      toast.error('Registration Failed', parsedErr);
     } finally {
       setIsSubmitting(false);
     }

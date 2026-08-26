@@ -5,8 +5,11 @@ import { api } from '../../services/api';
 import { Spinner } from '../../components/ui/LoadingState';
 import { Badge } from '../../components/ui/Badge';
 
+import { useToast } from '../../hooks/useToast';
+
 export const RecruiterJobsPage = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [jobs, setJobs] = useState([]);
   const [myCompany, setMyCompany] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -182,8 +185,10 @@ export const RecruiterJobsPage = () => {
     try {
       if (editingJob) {
         await api.put(`/jobs/${editingJob._id}`, payload);
+        toast.success('Job Posting Updated', `Successfully updated "${payload.title}"`);
       } else {
         await api.post('/jobs', payload);
+        toast.success('Job Posting Created', `Successfully published "${payload.title}"`);
       }
       setShowModal(false);
       fetchJobs();
@@ -192,7 +197,9 @@ export const RecruiterJobsPage = () => {
       if (errRes?.errors && Array.isArray(errRes.errors)) {
         setErrors(errRes.errors.map((e) => e.message || e.msg));
       } else {
-        setMessage(errRes?.message || 'Failed to save job listing');
+        const errMsg = errRes?.message || 'Failed to save job listing';
+        setMessage(errMsg);
+        toast.error('Failed to Save Job', errMsg);
       }
     } finally {
       setSaving(false);
@@ -203,9 +210,11 @@ export const RecruiterJobsPage = () => {
     if (!window.confirm('Are you sure you want to delete this job posting?')) return;
     try {
       await api.delete(`/jobs/${jobId}`);
+      toast.success('Job Posting Deleted', 'The job listing has been removed.');
       fetchJobs();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to delete job listing');
+      const errMsg = err.response?.data?.message || 'Failed to delete job listing';
+      toast.error('Delete Failed', errMsg);
     }
   };
 

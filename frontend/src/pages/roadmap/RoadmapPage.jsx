@@ -27,8 +27,11 @@ import { GenerateRoadmapModal } from '../../components/roadmap/GenerateRoadmapMo
 import { RoadmapPhaseTimeline } from '../../components/roadmap/RoadmapPhaseTimeline';
 import { RoadmapProgressTracker } from '../../components/roadmap/RoadmapProgressTracker';
 
+import { useToast } from '../../hooks/useToast';
+
 export const RoadmapPage = () => {
   const navigate = useNavigate();
+  const toast = useToast();
   const { roadmap, tasks, progress, loading, error, refresh } = useActiveRoadmap();
 
   // Generate Roadmap Modal State
@@ -57,20 +60,24 @@ export const RoadmapPage = () => {
       const resData = response?.data || response;
       const progressInfo = resData?.progress || {};
 
-      // Milestone Feedback logic
+      let msg = 'Task marked as completed!';
       if (progressInfo.roadmapProgress === 100 || progressInfo.roadmapStatus === 'COMPLETED') {
-        setMilestoneMessage('🎉 Congratulations! You have completed your entire AI Learning Roadmap!');
+        msg = '🎉 Congratulations! You have completed your entire AI Learning Roadmap!';
+        toast.custom('Roadmap Completed!', msg);
       } else if (progressInfo.phaseProgress === 100 || progressInfo.phaseStatus === 'COMPLETED') {
-        setMilestoneMessage('🌟 Phase Milestone Achieved! You have completed all tasks in this phase.');
+        msg = '🌟 Phase Milestone Achieved! You completed all tasks in this phase.';
+        toast.success('Phase Completed!', msg);
       } else if (progressInfo.roadmapProgress >= 50 && progress < 50) {
-        setMilestoneMessage('🚀 Halfway Milestone! You crossed 50% overall roadmap completion.');
+        msg = '🚀 Halfway Milestone! You crossed 50% overall roadmap completion.';
+        toast.info('Halfway Milestone!', msg);
       } else {
-        setMilestoneMessage('Task marked as completed! Roadmap progress updated.');
+        toast.success('Task Completed', 'Roadmap progress updated.');
       }
+      setMilestoneMessage(msg);
 
       await refresh();
     } catch (err) {
-      console.error('Error completing task:', err);
+      toast.error('Task Update Failed', 'Failed to mark task as completed.');
     } finally {
       setUpdatingTaskId(null);
     }

@@ -9,6 +9,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { parseApiError } from '../../utils/helpers';
 
 
+import { useToast } from '../../hooks/useToast';
+
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const LoginPage = () => {
@@ -20,6 +22,7 @@ export const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { login } = useAuth();
+  const toast = useToast();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -56,16 +59,16 @@ export const LoginPage = () => {
       const res = await login({ email: email.trim(), password });
       const loggedInUser = res?.user || res;
 
-      const userRole = loggedInUser?.role?.toLowerCase();
+      toast.success('Welcome Back!', `Signed in successfully as ${loggedInUser?.email || email}`);
 
-      // Destination preservation logic:
-      // If user came from a protected route, return them there.
-      // Otherwise, redirect Admin users to /admin and Candidates to /dashboard.
+      const userRole = loggedInUser?.role?.toLowerCase();
       const defaultPath = userRole === 'admin' ? '/admin' : userRole === 'recruiter' ? '/recruiter/dashboard' : '/dashboard';
       const redirectPath = from || defaultPath;
       navigate(redirectPath, { replace: true });
     } catch (err) {
-      setApiError(parseApiError(err));
+      const parsedErr = parseApiError(err);
+      setApiError(parsedErr);
+      toast.error('Authentication Failed', parsedErr);
     } finally {
       setIsSubmitting(false);
     }

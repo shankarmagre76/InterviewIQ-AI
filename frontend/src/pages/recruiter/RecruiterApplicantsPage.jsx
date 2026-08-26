@@ -15,7 +15,7 @@ import { api } from '../../services/api';
 import { Spinner } from '../../components/ui/LoadingState';
 import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
-import { ResumePreviewModal } from '../../components/resume/ResumePreviewModal';
+import { useToast } from '../../hooks/useToast';
 
 const ALL_STATUSES = [
   'Applied',
@@ -30,6 +30,7 @@ const ALL_STATUSES = [
 ];
 
 export const RecruiterApplicantsPage = () => {
+  const toast = useToast();
   const [applications, setApplications] = useState([]);
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState('all');
@@ -100,8 +101,11 @@ export const RecruiterApplicantsPage = () => {
           };
         })
       );
+
+      toast.success('Candidate Status Updated', `Status updated to "${newStatus}"`);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to update application status');
+      const msg = err.response?.data?.message || 'Failed to update application status';
+      toast.error('Status Update Failed', msg);
       throw err;
     } finally {
       setUpdatingId(null);
